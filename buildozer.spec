@@ -27,6 +27,12 @@ orientation = portrait
 # (bool) Indicate if the application should be fullscreen or not
 fullscreen = 0
 
+# (list) The Android archs to build for
+android.archs = arm64-v8a
+
+# (bool) Accept SDK licenses automatically
+android.accept_sdk_license = True
+
 [buildozer]
 
 # (int) Log level (0 = error only, 1 = info, 2 = debug (with command output))
