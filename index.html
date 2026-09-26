@@ -92,34 +92,22 @@
     <input type="hidden" id="editIndex" value="-1">
 
     <label>Ημερομηνία</label>
-    <input type="date" id="workDate" onchange="calculateAmounts()">
+    <input type="date" id="workDate" onchange="livePreview()">
 
     <label>Ώρα Έναρξης</label>
-    <input type="time" id="startTime" value="12:00">
+    <input type="time" id="startTime" value="10:00" onchange="livePreview()">
 
     <label>Ώρα Λήξης</label>
-    <input type="time" id="endTime" value="20:00">
+    <input type="time" id="endTime" value="20:00" onchange="livePreview()">
 
-    <label>Συνολικές Ώρες Βάρδιας</label>
-    <input type="number" step="0.25" id="totalShiftHours" value="8.00">
+    <label>Συνολικές Ώρες</label>
+    <input type="number" step="0.25" id="totalShiftHours" value="10.00" readonly>
 
-    <label>Ώρες Ανάπαυσης</label>
-    <input type="number" step="0.25" id="restHours" value="0.00" oninput="calculateAmounts()">
-
-    <label>Κανονικές Ώρες</label>
-    <input type="number" step="0.25" id="normalHours" value="0.00">
-
-    <label>Υπερωρίες</label>
-    <input type="number" step="0.25" id="overtimeHours" value="0.00">
-
-    <label>Σύνολο Υπερωριών</label>
-    <input type="number" step="0.25" id="totalOvertime" value="0.00" oninput="calculateAmounts()">
-
-    <label>Διάφορα (Ωρομίσθιο: 9€ / Σαβ/κο: 18€)</label>
-    <input type="number" step="0.25" id="miscHours" value="9.00">
+    <label>Ωρομίσθιο (Καθημερινή: 9€ / Σαβ/κο: 18€)</label>
+    <input type="number" step="0.25" id="miscHours" value="9.00" readonly>
 
     <label>Τελικό Ποσό / Σύνολο (€)</label>
-    <input type="number" step="0.01" id="finalAmount" value="0.00">
+    <input type="number" step="0.01" id="finalAmount" value="0.00" readonly>
 
     <button class="btn-save" onclick="saveEntry()">💾 Αποθήκευση</button>
     <button class="btn-delete" id="deleteBtn" onclick="deleteCurrentEntry()">🗑️ Διαγραφή Βάρδιας</button>
@@ -128,7 +116,7 @@
 
   <div class="card">
     <div class="val-box">
-      <label>Σύνολο Υπερωριών Μήνα</label>
+      <label>Σύνολο Ωρών Μήνα</label>
       <div class="val" id="totalHoursVal">0.00 hrs</div>
     </div>
     <div class="val-box">
@@ -161,27 +149,27 @@
 
 <script>
   let defaultShifts = [
-    {date: "2026-09-01", start: "09:15", end: "20:30", totalShift: 11.25, rest: 24.00, normal: 3.25, overtime: 0.00, totalOT: 3.25, misc: 9.00, finalAmt: 29.25},
-    {date: "2026-09-02", start: "09:30", end: "01:30", totalShift: 16.00, rest: 13.00, normal: 8.00, overtime: 0.00, totalOT: 8.00, misc: 9.00, finalAmt: 72.00},
-    {date: "2026-09-03", start: "09:30", end: "00:30", totalShift: 15.00, rest: 8.00, normal: 7.00, overtime: 3.00, totalOT: 10.00, misc: 9.00, finalAmt: 90.00},
-    {date: "2026-09-04", start: "09:30", end: "01:30", totalShift: 16.00, rest: 9.00, normal: 8.00, overtime: 2.00, totalOT: 10.00, misc: 9.00, finalAmt: 90.00},
-    {date: "2026-09-14", start: "10:00", end: "18:00", totalShift: 8.00, rest: 224.50, normal: 0.00, overtime: 0.00, totalOT: 0.00, misc: 9.00, finalAmt: 0.00},
-    {date: "2026-09-15", start: "10:00", end: "18:00", totalShift: 8.00, rest: 16.00, normal: 0.00, overtime: 0.00, totalOT: 0.00, misc: 9.00, finalAmt: 0.00},
-    {date: "2026-09-16", start: "09:00", end: "18:30", totalShift: 9.50, rest: 15.00, normal: 1.50, overtime: 0.00, totalOT: 1.50, misc: 9.00, finalAmt: 13.50},
-    {date: "2026-09-17", start: "09:00", end: "01:00", totalShift: 16.00, rest: 14.50, normal: 8.00, overtime: 0.00, totalOT: 8.00, misc: 9.00, finalAmt: 72.00},
-    {date: "2026-09-18", start: "08:00", end: "18:00", totalShift: 10.00, rest: 7.00, normal: 2.00, overtime: 4.00, totalOT: 6.00, misc: 9.00, finalAmt: 54.00},
-    {date: "2026-09-21", start: "09:00", end: "18:30", totalShift: 9.50, rest: 63.00, normal: 1.50, overtime: 0.00, totalOT: 1.50, misc: 9.00, finalAmt: 13.50},
-    {date: "2026-09-22", start: "09:00", end: "23:30", totalShift: 14.50, rest: 14.50, normal: 6.50, overtime: 0.00, totalOT: 6.50, misc: 9.00, finalAmt: 58.50},
-    {date: "2026-09-23", start: "09:30", end: "00:30", totalShift: 15.00, rest: 10.00, normal: 7.00, overtime: 1.00, totalOT: 8.00, misc: 9.00, finalAmt: 72.00},
-    {date: "2026-09-24", start: "09:00", end: "00:00", totalShift: 15.00, rest: 8.50, normal: 7.00, overtime: 2.50, totalOT: 9.50, misc: 9.00, finalAmt: 85.50},
-    {date: "2026-09-25", start: "10:00", end: "23:45", totalShift: 13.75, rest: 10.00, normal: 5.75, overtime: 1.00, totalOT: 6.75, misc: 9.00, finalAmt: 60.75},
-    {date: "2026-09-26", start: "13:00", end: "00:00", totalShift: 24.00, rest: 0.00, normal: 0.00, overtime: 0.00, totalOT: 0.00, misc: 9.00, finalAmt: 0.00}
+    {date: "2026-09-01", start: "09:15", end: "20:30", hours: 11.25, rate: 9.00, finalAmt: 101.25},
+    {date: "2026-09-02", start: "09:30", end: "01:30", hours: 16.00, rate: 9.00, finalAmt: 144.00},
+    {date: "2026-09-03", start: "09:30", end: "00:30", hours: 15.00, rate: 9.00, finalAmt: 135.00},
+    {date: "2026-09-04", start: "09:30", end: "01:30", hours: 16.00, rate: 9.00, finalAmt: 144.00},
+    {date: "2026-09-14", start: "10:00", end: "18:00", hours: 8.00, rate: 9.00, finalAmt: 72.00},
+    {date: "2026-09-15", start: "10:00", end: "18:00", hours: 8.00, rate: 9.00, finalAmt: 72.00},
+    {date: "2026-09-16", start: "09:00", end: "18:30", hours: 9.50, rate: 9.00, finalAmt: 85.50},
+    {date: "2026-09-17", start: "09:00", end: "01:00", hours: 16.00, rate: 9.00, finalAmt: 144.00},
+    {date: "2026-09-18", start: "08:00", end: "18:00", hours: 10.00, rate: 9.00, finalAmt: 90.00},
+    {date: "2026-09-21", start: "09:00", end: "18:30", hours: 9.50, rate: 9.00, finalAmt: 85.50},
+    {date: "2026-09-22", start: "09:00", end: "23:30", hours: 14.50, rate: 9.00, finalAmt: 130.50},
+    {date: "2026-09-23", start: "09:30", end: "00:30", hours: 15.00, rate: 9.00, finalAmt: 135.00},
+    {date: "2026-09-24", start: "09:00", end: "00:00", hours: 15.00, rate: 9.00, finalAmt: 135.00},
+    {date: "2026-09-25", start: "10:00", end: "23:45", hours: 13.75, rate: 9.00, finalAmt: 123.75},
+    {date: "2026-09-26", start: "10:00", end: "20:00", hours: 10.00, rate: 18.00, finalAmt: 180.00}
   ];
 
-  let stored = localStorage.getItem('extrahours_exact_data_v3');
+  let stored = localStorage.getItem('extrahours_exact_data_v5');
   let shifts = stored ? JSON.parse(stored) : defaultShifts;
   if (!stored) {
-    localStorage.setItem('extrahours_exact_data_v3', JSON.stringify(shifts));
+    localStorage.setItem('extrahours_exact_data_v5', JSON.stringify(shifts));
   }
 
   function isWeekend(dateStr) {
@@ -191,13 +179,30 @@
     return (day === 0 || day === 6); // 0 = Κυριακή, 6 = Σάββατο
   }
 
-  function calculateAmounts() {
-    let dateStr = document.getElementById('workDate').value;
-    let totalOT = parseFloat(document.getElementById('totalOvertime').value) || 0;
+  function calculateValues(dateStr, start, end) {
+    let hours = 0;
+    if (start && end) {
+      let [sh, sm] = start.split(':').map(Number);
+      let [eh, em] = end.split(':').map(Number);
+      let startMin = sh * 60 + sm;
+      let endMin = eh * 60 + em;
+      if (endMin < startMin) endMin += 24 * 60; // αν περνάει τα μεσάνυχτα
+      hours = (endMin - startMin) / 60;
+    }
     let rate = isWeekend(dateStr) ? 18.0 : 9.0;
-    
-    document.getElementById('miscHours').value = rate.toFixed(2);
-    document.getElementById('finalAmount').value = (totalOT * rate).toFixed(2);
+    let finalAmt = hours * rate;
+    return { hours, rate, finalAmt };
+  }
+
+  function livePreview() {
+    let dateStr = document.getElementById('workDate').value;
+    let start = document.getElementById('startTime').value;
+    let end = document.getElementById('endTime').value;
+    let calc = calculateValues(dateStr, start, end);
+
+    document.getElementById('totalShiftHours').value = calc.hours.toFixed(2);
+    document.getElementById('miscHours').value = calc.rate.toFixed(2);
+    document.getElementById('finalAmount').value = calc.finalAmt.toFixed(2);
   }
 
   function toggleSettings() {
@@ -212,13 +217,8 @@
       document.getElementById('formTitle').innerText = 'Νέα Καταχώρηση Βάρδιας';
       let todayStr = new Date().toISOString().substring(0, 10);
       document.getElementById('workDate').value = todayStr;
-      document.getElementById('startTime').value = '12:00';
+      document.getElementById('startTime').value = '10:00';
       document.getElementById('endTime').value = '20:00';
-      document.getElementById('totalShiftHours').value = '8.00';
-      document.getElementById('restHours').value = '0.00';
-      document.getElementById('normalHours').value = '0.00';
-      document.getElementById('overtimeHours').value = '0.00';
-      document.getElementById('totalOvertime').value = '0.00';
       deleteBtn.style.display = 'none';
     } else {
       document.getElementById('formTitle').innerText = 'Επεξεργασία Βάρδιας';
@@ -226,16 +226,9 @@
       document.getElementById('workDate').value = item.date;
       document.getElementById('startTime').value = item.start;
       document.getElementById('endTime').value = item.end;
-      document.getElementById('totalShiftHours').value = item.totalShift;
-      document.getElementById('restHours').value = item.rest;
-      document.getElementById('normalHours').value = item.normal;
-      document.getElementById('overtimeHours').value = item.overtime;
-      document.getElementById('totalOvertime').value = item.totalOT;
-      document.getElementById('miscHours').value = item.misc;
-      document.getElementById('finalAmount').value = item.finalAmt;
       deleteBtn.style.display = 'block';
     }
-    calculateAmounts();
+    livePreview();
     document.getElementById('formCard').style.display = 'block';
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
@@ -243,46 +236,50 @@
   function closeForm() { document.getElementById('formCard').style.display = 'none'; }
 
   function saveAndRender() {
-    shifts.sort((a, b) => new Date(a.date) - new Date(b.date));
-    localStorage.setItem('extrahours_exact_data_v3', JSON.stringify(shifts));
+    // Ταξινόμηση: πιο πρόσφατη ημερομηνία ΠΡΩΤΗ (φθίνουσα)
+    shifts.sort((a, b) => new Date(b.date) - new Date(a.date));
+    localStorage.setItem('extrahours_exact_data_v5', JSON.stringify(shifts));
     
     const tbody = document.getElementById('logsTable');
     tbody.innerHTML = '';
-    let totalOTSum = 0;
+    let totalHoursSum = 0;
     let totalPaySum = 0;
 
     shifts.forEach((item, index) => {
-      totalOTSum += Number(item.totalOT);
+      totalHoursSum += Number(item.hours);
       totalPaySum += Number(item.finalAmt);
 
       tbody.innerHTML += `
         <tr class="clickable-row" onclick="openForm(${index})">
           <td><b>${item.date}</b><br><span style="color:#aaa; font-size:0.8rem;">🕒 ${item.start} - ${item.end}</span></td>
-          <td>Σύνολο Υπερ.: <b>${Number(item.totalOT).toFixed(2)}h</b></td>
+          <td>Ώρες: <b>${Number(item.hours).toFixed(2)}h</b></td>
           <td><b>€${Number(item.finalAmt).toFixed(2)}</b></td>
         </tr>`;
     });
 
-    document.getElementById('totalHoursVal').innerText = totalOTSum.toFixed(2) + ' hrs';
+    document.getElementById('totalHoursVal').innerText = totalHoursSum.toFixed(2) + ' hrs';
     document.getElementById('totalPayVal').innerText = '€' + totalPaySum.toFixed(2);
   }
 
   function saveEntry() {
     const editIndex = parseInt(document.getElementById('editIndex').value);
-    const entry = {
-      date: document.getElementById('workDate').value,
-      start: document.getElementById('startTime').value,
-      end: document.getElementById('endTime').value,
-      totalShift: parseFloat(document.getElementById('totalShiftHours').value) || 0,
-      rest: parseFloat(document.getElementById('restHours').value) || 0,
-      normal: parseFloat(document.getElementById('normalHours').value) || 0,
-      overtime: parseFloat(document.getElementById('overtimeHours').value) || 0,
-      totalOT: parseFloat(document.getElementById('totalOvertime').value) || 0,
-      misc: parseFloat(document.getElementById('miscHours').value) || 9.0,
-      finalAmt: parseFloat(document.getElementById('finalAmount').value) || 0
-    };
+    let dateStr = document.getElementById('workDate').value;
+    let start = document.getElementById('startTime').value;
+    let end = document.getElementById('endTime').value;
 
-    if(!entry.date) return alert('Συμπλήρωσε ημερομηνία!');
+    if(!dateStr) return alert('Συμπλήρωσε ημερομηνία!');
+
+    // Υπολογισμός την ώρα της αποθήκευσης (είτε είναι νέα είτε διόρθωση παλιάς)
+    let calc = calculateValues(dateStr, start, end);
+
+    const entry = {
+      date: dateStr,
+      start: start,
+      end: end,
+      hours: calc.hours,
+      rate: calc.rate,
+      finalAmt: calc.finalAmt
+    };
 
     if (editIndex === -1) {
       shifts.push(entry);
@@ -297,7 +294,7 @@
   function deleteCurrentEntry() {
     const editIndex = parseInt(document.getElementById('editIndex').value);
     if (editIndex >= 0) {
-      if (confirm('Σίγουρα θέλεις να διαγράψεις αυτή τη βάρδια?')) {
+      if (confirm('Σίγουρα θέλεις να διαγράψεις αυτή τη βάρδια;')) {
         shifts.splice(editIndex, 1);
         saveAndRender();
         closeForm();
@@ -309,20 +306,20 @@
     if(shifts.length === 0) return alert('Δεν υπάρχουν δεδομένα!');
 
     let csv = '\uFEFFΠΕΡΙΟΔΟΣ ΑΝΑΦΟΡΑΣ: Σεπτέμβριος 2026\n';
-    csv += 'Ημερομηνία;Έναρξη;Λήξη;Συνολικές Ώρες Βάρδιας;Ώρες Ανάπαυσης;Κανονικές Ώρες;Υπερωρίες;Σύνολο Υπερωριών;Ωρομίσθιο (€);Τελικό Ποσό/Σύνολο\n';
+    csv += 'Ημερομηνία;Έναρξη;Λήξη;Συνολικές Ώρες;Ωρομίσθιο (€);Τελικό Ποσό/Σύνολο\n';
 
-    let totalOTSum = 0;
+    let totalHoursSum = 0;
     let totalPaySum = 0;
 
     shifts.forEach(item => {
-      totalOTSum += Number(item.totalOT);
+      totalHoursSum += Number(item.hours);
       totalPaySum += Number(item.finalAmt);
 
-      csv += `${item.date};${item.start};${item.end};${item.totalShift.toFixed(2)};${item.rest.toFixed(2)};${item.normal.toFixed(2)};${item.overtime.toFixed(2)};${item.totalOT.toFixed(2)};${Number(item.misc).toFixed(2)};${item.finalAmt.toFixed(2)}\n`;
+      csv += `${item.date};${item.start};${item.end};${item.hours.toFixed(2)};${item.rate.toFixed(2)};${item.finalAmt.toFixed(2)}\n`;
     });
 
-    csv += `\n; ; ; ; ; ; ;ΣΥΝΟΛΟ ΥΠΕΡΩΡΙΩΝ:;${totalOTSum.toFixed(2)}; \n`;
-    csv += `; ; ; ; ; ; ;ΤΕΛΙΚΟ ΠΟΣΟ ΜΗΝΑ:; ;${totalPaySum.toFixed(2)}\n`;
+    csv += `\n; ;ΣΥΝΟΛΟ ΩΡΩΝ:;${totalHoursSum.toFixed(2)}; \n`;
+    csv += `; ;ΤΕΛΙΚΟ ΠΟΣΟ ΜΗΝΑ:; ;${totalPaySum.toFixed(2)}\n`;
 
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
