@@ -20,7 +20,8 @@ jobs:
       run: |
         sudo apt-get update
         sudo apt-get install -y build-essential git ffmpeg libsdl2-dev libsdl2-image-dev libsdl2-mixer-dev libsdl2-ttf-dev libportmidi-dev libswscale-dev libavformat-dev libavcodec-dev zlib1g-dev autoconf automake libtool pkg-config m4 libssl-dev libffi-dev openjdk-17-jdk zip unzip aidl
-        pip install --upgrade buildozer cython
+        pip install --upgrade pip
+        pip install "cython<3.0.0" buildozer
 
     - name: Accept Android SDK Licenses & Build APK
       run: |
