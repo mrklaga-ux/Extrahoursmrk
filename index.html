@@ -6,26 +6,27 @@
   <title>Extrahoursmrk</title>
   <style>
     body {
-      font-family: sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
       background-color: #121212;
       color: #ffffff;
       padding: 12px;
       margin: 0;
     }
-    h1 { color: #00e676; text-align: center; font-size: 1.5rem; margin: 10px 0; }
+    h1 { color: #00e676; text-align: center; font-size: 1.6rem; margin: 12px 0; }
     .card {
       background: #1e1e1e;
-      padding: 14px;
-      border-radius: 10px;
+      padding: 16px;
+      border-radius: 12px;
       margin-bottom: 14px;
       border: 1px solid #333;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.3);
     }
-    label { display: block; margin: 8px 0 4px; color: #aaa; font-size: 0.9rem; }
+    label { display: block; margin: 10px 0 4px; color: #b0b0b0; font-size: 0.9rem; font-weight: 500; }
     input, select, button {
       width: 100%;
       padding: 12px;
       margin-bottom: 8px;
-      border-radius: 6px;
+      border-radius: 8px;
       border: 1px solid #444;
       background: #2a2a2a;
       color: #fff;
@@ -35,39 +36,45 @@
     .checkbox-container {
       display: flex;
       align-items: center;
-      gap: 10px;
-      margin: 12px 0;
+      gap: 12px;
+      margin: 14px 0;
       cursor: pointer;
+      background: #252525;
+      padding: 10px;
+      border-radius: 8px;
     }
     .checkbox-container input {
       width: auto;
       margin: 0;
       transform: scale(1.4);
+      accent-color: #00e676;
     }
     button.btn-open {
       background: #00e676;
       color: #000;
       font-weight: bold;
       font-size: 1.2rem;
-      padding: 14px;
+      padding: 16px;
       border: none;
       margin-bottom: 14px;
+      border-radius: 10px;
+      box-shadow: 0 4px 12px rgba(0, 230, 118, 0.3);
     }
-    button.btn-save { background: #00e676; color: #000; font-weight: bold; border: none; font-size: 1.1rem; margin-top: 8px; }
-    button.btn-delete { background: #d32f2f; color: #fff; font-weight: bold; border: none; font-size: 1.1rem; margin-top: 4px; display: none; }
-    button.btn-cancel { background: #444; color: #fff; border: none; margin-top: 4px; }
-    button.btn-sec { background: #333; color: #fff; margin-top: 6px; }
+    button.btn-save { background: #00e676; color: #000; font-weight: bold; border: none; font-size: 1.1rem; margin-top: 10px; }
+    button.btn-delete { background: #d32f2f; color: #fff; font-weight: bold; border: none; font-size: 1.1rem; margin-top: 6px; display: none; }
+    button.btn-cancel { background: #444; color: #fff; border: none; margin-top: 6px; }
+    button.btn-sec { background: #2c2c2c; color: #fff; border: 1px solid #555; margin-top: 8px; font-weight: 600; }
     
-    .val-box { background: #252525; padding: 10px; border-radius: 6px; text-align: center; margin-bottom: 8px; }
-    .val { font-size: 1.5rem; font-weight: bold; color: #00e676; }
+    .val-box { background: #252525; padding: 12px; border-radius: 8px; text-align: center; margin-bottom: 10px; border: 1px solid #383838; }
+    .val { font-size: 1.6rem; font-weight: bold; color: #00e676; margin-top: 4px; }
     
-    table { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 0.85rem; }
+    table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.85rem; }
     th, td { padding: 12px 8px; border-bottom: 1px solid #333; text-align: left; }
-    th { color: #aaa; }
+    th { color: #aaa; font-weight: 600; }
     
     tr.clickable-row {
       cursor: pointer;
-      transition: background-color 0.1s ease;
+      transition: background-color 0.15s ease;
     }
     tr.clickable-row:active, tr.clickable-row:hover {
       background-color: #2c2c2c;
@@ -78,7 +85,7 @@
       color: #000;
       font-size: 0.75rem;
       font-weight: bold;
-      padding: 2px 6px;
+      padding: 3px 6px;
       border-radius: 4px;
       display: inline-block;
       margin-top: 4px;
@@ -88,7 +95,7 @@
       color: #fff;
       font-size: 0.75rem;
       font-weight: bold;
-      padding: 2px 6px;
+      padding: 3px 6px;
       border-radius: 4px;
       display: inline-block;
       margin-top: 4px;
@@ -100,7 +107,7 @@
 
   <h1>Extrahoursmrk</h1>
 
-  <button class="btn-open" onclick="openForm()">➕ Νέα Καταχώρηση</button>
+  <button class="btn-open" onclick="openForm()">➕ Νέα Καταχώρηση Βάρδιας</button>
 
   <div class="card" id="formCard">
     <h3 id="formTitle" style="margin-top:0; color:#00e676;">Καταχώρηση Βάρδιας</h3>
@@ -127,10 +134,10 @@
 
     <label class="checkbox-container">
       <input type="checkbox" id="isHoliday">
-      <span>🎉 Είναι Αργία / Σαββατοκύριακο (18€/ώρα)</span>
+      <span>🎉 Είναι Αργία / Ειδική Ημέρα (18€/ώρα)</span>
     </label>
 
-    <button class="btn-save" onclick="saveEntry()">💾 Αποθήκευση Αλλαγών</button>
+    <button class="btn-save" onclick="saveEntry()">💾 Αποθήκευση</button>
     <button class="btn-delete" id="deleteBtn" onclick="deleteCurrentEntry()">🗑️ Διαγραφή Βάρδιας</button>
     <button class="btn-cancel" onclick="closeForm()">Ακύρωση</button>
   </div>
@@ -141,30 +148,29 @@
       <div class="val" id="totalHours">0.00 hrs</div>
     </div>
     <div class="val-box">
-      <label>Συνολική Αμοιβή</label>
+      <label>Συνολική Εκτιμώμενη Αμοιβή</label>
       <div class="val" id="totalPay">€0.00</div>
     </div>
   </div>
 
   <div class="card">
-    <label>Τρόπος Εξαγωγής Excel</label>
+    <label>Επιλογή Περιόδου Εξαγωγής Excel</label>
     <select id="exportMode" onchange="toggleExportMode()">
-      <option value="month">Επιλογή Μήνα</option>
-      <option value="all">Όλοι οι Μήνες / Όλο το Έτος</option>
+      <option value="month">Συγκεκριμένος Μήνας</option>
+      <option value="all">Όλο το Ιστορικό (Όλοι οι Μήνες)</option>
     </select>
 
     <div id="monthSelectorDiv">
-      <label>Επιλέξτε Μήνα</label>
+      <label>Μήνας Αναφοράς</label>
       <input type="month" id="exportMonth">
     </div>
 
     <button class="btn-sec" onclick="exportCSV()">📊 Εξαγωγή σε Excel (CSV)</button>
     <button class="btn-sec" onclick="sendHR()">✉️ Αποστολή στο HR</button>
-    <button class="btn-sec" style="background:#2e7d32; color:#fff;" onclick="loadExcelForce()">🔄 Επαναφορά Δεδομένων Excel</button>
   </div>
 
   <div class="card">
-    <h3 style="margin-top:0;">Ιστορικό Βαρδιών <span style="font-size:0.75rem; color:#aaa; font-weight:normal;">(Πατήστε μια γραμμή για επεξεργασία/διαγραφή)</span></h3>
+    <h3 style="margin-top:0;">Ιστορικό Βαρδιών <span style="font-size:0.75rem; color:#aaa; font-weight:normal;">(Πατήστε μια γραμμή για διόρθωση/διαγραφή)</span></h3>
     <table>
       <thead>
         <tr>
@@ -182,25 +188,8 @@
   document.getElementById('workDate').value = todayStr;
   document.getElementById('exportMonth').value = todayStr.substring(0, 7);
 
-  const excelDefaultShifts = [
-    { date: "2026-09-01", startISO: "2026-09-01T09:15:00", endISO: "2026-09-01T20:30:00", breakMins: 0, isHoliday: false },
-    { date: "2026-09-02", startISO: "2026-09-02T09:30:00", endISO: "2026-09-03T01:30:00", breakMins: 0, isHoliday: false },
-    { date: "2026-09-03", startISO: "2026-09-03T09:30:00", endISO: "2026-09-04T00:30:00", breakMins: 0, isHoliday: false },
-    { date: "2026-09-04", startISO: "2026-09-04T09:30:00", endISO: "2026-09-05T01:30:00", breakMins: 0, isHoliday: false },
-    { date: "2026-09-14", startISO: "2026-09-14T10:00:00", endISO: "2026-09-14T18:00:00", breakMins: 0, isHoliday: false },
-    { date: "2026-09-15", startISO: "2026-09-15T10:00:00", endISO: "2026-09-15T18:00:00", breakMins: 0, isHoliday: false },
-    { date: "2026-09-16", startISO: "2026-09-16T09:00:00", endISO: "2026-09-16T18:30:00", breakMins: 0, isHoliday: false },
-    { date: "2026-09-17", startISO: "2026-09-17T09:00:00", endISO: "2026-09-18T01:00:00", breakMins: 0, isHoliday: false },
-    { date: "2026-09-18", startISO: "2026-09-18T08:00:00", endISO: "2026-09-18T18:00:00", breakMins: 0, isHoliday: false },
-    { date: "2026-09-21", startISO: "2026-09-21T09:00:00", endISO: "2026-09-21T18:30:00", breakMins: 0, isHoliday: false },
-    { date: "2026-09-22", startISO: "2026-09-22T09:00:00", endISO: "2026-09-22T23:30:00", breakMins: 0, isHoliday: false },
-    { date: "2026-09-23", startISO: "2026-09-23T09:30:00", endISO: "2026-09-24T00:30:00", breakMins: 0, isHoliday: false },
-    { date: "2026-09-24", startISO: "2026-09-24T09:00:00", endISO: "2026-09-25T00:00:00", breakMins: 0, isHoliday: false },
-    { date: "2026-09-25", startISO: "2026-09-25T10:00:00", endISO: "2026-09-25T23:45:00", breakMins: 0, isHoliday: false }
-  ];
-
-  let stored = localStorage.getItem('extrahours_v13');
-  let shifts = stored ? JSON.parse(stored) : [...excelDefaultShifts];
+  let stored = localStorage.getItem('extrahours_v15');
+  let shifts = stored ? JSON.parse(stored) : [];
 
   function toggleExportMode() {
     const mode = document.getElementById('exportMode').value;
@@ -241,7 +230,7 @@
 
   function saveAndRender() {
     shifts.sort((a, b) => new Date(a.startISO) - new Date(b.startISO));
-    localStorage.setItem('extrahours_v13', JSON.stringify(shifts));
+    localStorage.setItem('extrahours_v15', JSON.stringify(shifts));
     
     const tbody = document.getElementById('logsTable');
     tbody.innerHTML = '';
@@ -268,7 +257,7 @@
       let totalHours = diffMins > 0 ? diffMins / 60 : 0;
       let otHours = totalHours > 8 ? (totalHours - 8) : 0;
 
-      let restHoursVal = 24.00; // Προεπιλογή αν δεν υπάρχει προηγούμενη
+      let restHoursVal = 24.00;
       let restDeficit = 0;
       let restWarning = '';
 
@@ -355,19 +344,24 @@
     }
   }
 
-  function loadExcelForce() {
-    shifts = [...excelDefaultShifts];
-    saveAndRender();
-  }
-
   function exportCSV() {
     if(shifts.length === 0) return alert('Δεν υπάρχουν δεδομένα!');
     
     const mode = document.getElementById('exportMode').value;
     const selectedMonth = document.getElementById('exportMonth').value;
 
-    // Πλήρως αναλυτικές στήλες CSV χωρισμένες με ερωτηματικό (;) συμπεριλαμβανομένης της ανάπαυσης
-    let csv = '\uFEFFΗμερομηνία;Έναρξη;Λήξη;Συνολικές Ώρες Βάρδιας;Ώρες Ανάπαυσης από Προηγούμενη;Υπερωρία (>8h);Έλλειψη Ανάπαυσης (<11h);Συνολικές Έξτρα Ώρες;Ωρομίσθιο (€);Συνολικό Ποσό (€)\n';
+    let monthNames = ["Ιανουάριος", "Φεβρουάριος", "Μάρτιος", "Απρίλιος", "Μάιος", "Ιούνιος", "Ιούλιος", "Αύγουστος", "Σεπτέμβριος", "Οκτώβριος", "Νοέμβριος", "Δεκέμβριος"];
+    let periodTitle = "Όλο το Ιστορικό (Όλα τα Έτη)";
+    if (mode === 'month' && selectedMonth) {
+      let parts = selectedMonth.split('-');
+      let y = parts[0];
+      let m = parseInt(parts[1], 10) - 1;
+      periodTitle = `${monthNames[m]} ${y}`;
+    }
+
+    // Καθαρή μορφοποίηση Excel (με τίτλο περιόδου στην κορυφή)
+    let csv = `\uFEFF"ΠΕΡΙΟΔΟΣ ΑΝΑΦΟΡΑΣ:";"${periodTitle}"\n`;
+    csv += 'Ημερομηνία;Έναρξη;Λήξη;Συνολικές Ώρες Βάρδιας;Ώρες Ανάπαυσης από Προηγούμενη;Υπερωρία (>8h);Έλλειψη Ανάπαυσης (<11h);Συνολικές Έξτρα Ώρες;Ωρομίσθιο (€);Συνολικό Ποσό (€)\n';
     let count = 0;
 
     shifts.forEach((item, index) => {
@@ -421,7 +415,7 @@
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
-    link.download = `ExtraHours_FullAnalytic_${mode === 'month' ? selectedMonth : 'All'}_${new Date().toISOString().slice(0,10)}.csv`;
+    link.download = `ExtraHours_${mode === 'month' ? selectedMonth : 'Full_History'}_${new Date().toISOString().slice(0,10)}.csv`;
     link.click();
   }
 
