@@ -47,9 +47,10 @@
     .val-box { background: #252525; padding: 10px; border-radius: 6px; text-align: center; margin-bottom: 8px; }
     .val { font-size: 1.5rem; font-weight: bold; color: #00e676; }
     table { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 0.85rem; }
-    th, td { padding: 8px; border-bottom: 1px solid #333; text-align: left; }
+    th, td { padding: 12px 8px; border-bottom: 1px solid #333; text-align: left; }
     th { color: #aaa; }
-    .btn-del { background: #ff5252; color: white; border: none; padding: 4px 10px; border-radius: 4px; width: auto; margin: 0; }
+    tr.clickable-row { cursor: pointer; }
+    tr.clickable-row:active { background-color: #2a2a2a; }
     .warn-badge {
       background: #ff9800;
       color: #000;
@@ -67,10 +68,8 @@
 
   <h1>Extrahoursmrk</h1>
 
-  <!-- ΚΟΥΜΠΙ ΑΝΟΙΓΜΑΤΟΣ ΜΕΝΟΥ -->
   <button class="btn-open" onclick="openForm()">➕ Νέα Καταχώρηση</button>
 
-  <!-- ΦΟΡΜΑ -->
   <div class="card" id="formCard">
     <h3 style="margin-top:0; color:#00e676;">Καταχώρηση Βάρδιας</h3>
     
@@ -96,7 +95,6 @@
     <button class="btn-cancel" onclick="closeForm()">Ακύρωση</button>
   </div>
 
-  <!-- ΣΥΝΟΛΑ -->
   <div class="card">
     <div class="val-box">
       <label>Συνολικές Ώρες</label>
@@ -108,23 +106,20 @@
     </div>
   </div>
 
-  <!-- ΕΞΑΓΩΓΗ & ΚΑΘΑΡΙΣΜΟΣ -->
   <div class="card">
     <button class="btn-sec" onclick="exportCSV()">📊 Εξαγωγή σε Excel (CSV)</button>
     <button class="btn-sec" onclick="sendHR()">✉️ Αποστολή στο HR</button>
-    <button class="btn-sec" style="background:#b71c1c; color:#fff;" onclick="resetExcelData()">🔄 Επαναφορά Δεδομένων Excel</button>
+    <button class="btn-sec" style="background:#2e7d32; color:#fff;" onclick="loadExcelForce()">🔄 Επαναφορά Δεδομένων Excel</button>
   </div>
 
-  <!-- ΙΣΤΟΡΙΚΟ -->
   <div class="card">
-    <h3 style="margin-top:0;">Ιστορικό Βαρδιών</h3>
+    <h3 style="margin-top:0;">Ιστορικό Βαρδιών <span style="font-size:0.75rem; color:#aaa; font-weight:normal;">(Πατήστε πάνω σε μια εγγραφή για επιλογές)</span></h3>
     <table>
       <thead>
         <tr>
           <th>Ημερ.</th>
           <th>Ώρες</th>
           <th>Ποσό</th>
-          <th></th>
         </tr>
       </thead>
       <tbody id="logsTable"></tbody>
@@ -134,7 +129,6 @@
 <script>
   document.getElementById('workDate').value = new Date().toISOString().substring(0, 10);
 
-  // Τα δεδομένα από το Excel
   const excelDefaultData = [
     { date: "2026-09-01", startISO: "2026-09-01T09:15:00", endISO: "2026-09-01T20:30:00", netHours: 11.25, pay: 107.10 },
     { date: "2026-09-02", startISO: "2026-09-02T09:30:00", endISO: "2026-09-03T01:30:00", netHours: 16.00, pay: 158.40 },
@@ -152,20 +146,15 @@
     { date: "2026-09-25", startISO: "2026-09-25T10:00:00", endISO: "2026-09-25T23:45:00", netHours: 13.75, pay: 134.10 }
   ];
 
-  let stored = localStorage.getItem('extrahours_db_v2');
-  let entries = (stored && JSON.parse(stored).length > 0) ? JSON.parse(stored) : [...excelDefaultData];
+  let stored = localStorage.getItem('extrahours_v3');
+  let entries = stored ? JSON.parse(stored) : [...excelDefaultData];
 
-  function openForm() {
-    document.getElementById('formCard').style.display = 'block';
-  }
-
-  function closeForm() {
-    document.getElementById('formCard').style.display = 'none';
-  }
+  function openForm() { document.getElementById('formCard').style.display = 'block'; }
+  function closeForm() { document.getElementById('formCard').style.display = 'none'; }
 
   function saveAndRender() {
     entries.sort((a, b) => new Date(a.startISO) - new Date(b.startISO));
-    localStorage.setItem('extrahours_db_v2', JSON.stringify(entries));
+    localStorage.setItem('extrahours_v3', JSON.stringify(entries));
     
     const tbody = document.getElementById('logsTable');
     tbody.innerHTML = '';
@@ -187,16 +176,23 @@
       }
 
       tbody.innerHTML += `
-        <tr>
+        <tr class="clickable-row" onclick="onRowClick(${index})">
           <td>${item.date}${restWarning}</td>
           <td>${item.netHours.toFixed(2)}h</td>
           <td>€${item.pay.toFixed(2)}</td>
-          <td><button class="btn-del" onclick="deleteEntry(${index})">X</button></td>
         </tr>`;
     });
 
     document.getElementById('totalHours').innerText = sumHours.toFixed(2) + ' hrs';
     document.getElementById('totalPay').innerText = '€' + sumPay.toFixed(2);
+  }
+
+  function onRowClick(index) {
+    let item = entries[index];
+    let confirmDel = confirm(`Επιλογές για τη βάρδια στις ${item.date} (${item.netHours.toFixed(2)}h):\n\nΘέλετε να ΔΙΑΓΡΑΨΕΤΕ αυτή τη βάρδια;`);
+    if (confirmDel) {
+      deleteEntry(index);
+    }
   }
 
   function addEntry() {
@@ -208,11 +204,7 @@
     if(!date || !start || !end) return alert('Συμπλήρωσε όλα τα πεδία');
 
     let startISO = new Date(`${date}T${start}`).toISOString();
-
-    let exists = entries.some(e => e.startISO === startISO);
-    if (exists) {
-      return alert('Η συγκεκριμένη βάρδια έχει καταχωρηθεί ήδη!');
-    }
+    if (entries.some(e => e.startISO === startISO)) return alert('Η βάρδια υπάρχει ήδη!');
 
     let [sH, sM] = start.split(':').map(Number);
     let [eH, eM] = end.split(':').map(Number);
@@ -222,7 +214,6 @@
     if (d2 <= d1) d2.setDate(d2.getDate() + 1);
 
     let endISO = new Date(new Date(startISO).getTime() + (d2 - d1)).toISOString();
-
     let diffMins = (d2 - d1) / (1000 * 60) - breakMins;
     if (diffMins < 0) diffMins = 0;
 
@@ -240,7 +231,7 @@
     saveAndRender();
   }
 
-  function resetExcelData() {
+  function loadExcelForce() {
     entries = [...excelDefaultData];
     saveAndRender();
   }
