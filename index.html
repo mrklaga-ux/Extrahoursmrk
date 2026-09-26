@@ -32,7 +32,17 @@
       font-size: 1rem;
       box-sizing: border-box;
     }
-    button.btn-add { background: #00e676; color: #000; font-weight: bold; border: none; font-size: 1.1rem; margin-top: 6px; }
+    button.btn-open {
+      background: #00e676;
+      color: #000;
+      font-weight: bold;
+      font-size: 1.2rem;
+      padding: 14px;
+      border: none;
+      margin-bottom: 14px;
+    }
+    button.btn-save { background: #00e676; color: #000; font-weight: bold; border: none; font-size: 1.1rem; margin-top: 8px; }
+    button.btn-cancel { background: #444; color: #fff; border: none; margin-top: 4px; }
     button.btn-sec { background: #333; color: #fff; margin-top: 6px; }
     .val-box { background: #252525; padding: 10px; border-radius: 6px; text-align: center; margin-bottom: 8px; }
     .val { font-size: 1.5rem; font-weight: bold; color: #00e676; }
@@ -50,14 +60,21 @@
       display: inline-block;
       margin-top: 4px;
     }
+    /* Κρυφή φόρμα αρχικά */
+    #formCard { display: none; }
   </style>
 </head>
 <body>
 
   <h1>Extrahoursmrk</h1>
 
-  <!-- ΦΟΡΜΑ ΚΑΤΑΧΩΡΗΣΗΣ -->
-  <div class="card">
+  <!-- ΚΟΥΜΠΙ ΓΙΑ ΝΑ ΑΝΟΙΞΕΙ ΤΟ ΜΕΝΟΥ ΚΑΤΑΧΩΡΗΣΗΣ -->
+  <button class="btn-open" onclick="openForm()">➕ Νέα Καταχώρηση</button>
+
+  <!-- ΦΟΡΜΑ (ΑΝΟΙΓΕΙ ΜΟΝΟ OTAN ΠΑΤΑΣ ΝΕΑ ΚΑΤΑΧΩΡΗΣΗ) -->
+  <div class="card" id="formCard">
+    <h3 style="margin-top:0; color:#00e676;">Καταχώρηση Βάρδιας</h3>
+    
     <label>Ημερομηνία</label>
     <input type="date" id="workDate">
 
@@ -76,7 +93,8 @@
       <option value="60">60 λεπτά</option>
     </select>
 
-    <button class="btn-add" onclick="addEntry()">Καταχώρηση Βάρδιας</button>
+    <button class="btn-save" onclick="addEntry()">💾 Αποθήκευση</button>
+    <button class="btn-cancel" onclick="closeForm()">Ακύρωση</button>
   </div>
 
   <!-- ΣΥΝΟΛΑ -->
@@ -117,6 +135,14 @@
 <script>
   document.getElementById('workDate').value = new Date().toISOString().substring(0, 10);
   let entries = JSON.parse(localStorage.getItem('extrahours_db')) || [];
+
+  function openForm() {
+    document.getElementById('formCard').style.display = 'block';
+  }
+
+  function closeForm() {
+    document.getElementById('formCard').style.display = 'none';
+  }
 
   function saveAndRender() {
     entries.sort((a, b) => new Date(a.startISO) - new Date(b.startISO));
@@ -163,7 +189,12 @@
     if(!date || !start || !end) return alert('Συμπλήρωσε όλα τα πεδία');
 
     let startISO = new Date(`${date}T${start}`).toISOString();
-    
+
+    let exists = entries.some(e => e.startISO === startISO);
+    if (exists) {
+      return alert('Η συγκεκριμένη βάρδια έχει καταχωρηθεί ήδη!');
+    }
+
     let [sH, sM] = start.split(':').map(Number);
     let [eH, eM] = end.split(':').map(Number);
 
@@ -182,6 +213,9 @@
 
     entries.push({ date, startISO, endISO, netHours, pay });
     saveAndRender();
+
+    // Κλείσιμο μενού μετά την αποθήκευση
+    closeForm();
   }
 
   function deleteEntry(index) {
