@@ -163,10 +163,10 @@
     {date: "2026-09-26", start: "10:00", end: "00:30"}
   ];
 
-  let stored = localStorage.getItem('extrahours_exact_data_v17');
+  let stored = localStorage.getItem('extrahours_exact_data_v19');
   let shifts = stored ? JSON.parse(stored) : defaultShifts;
   if (!stored) {
-    localStorage.setItem('extrahours_exact_data_v17', JSON.stringify(shifts));
+    localStorage.setItem('extrahours_exact_data_v19', JSON.stringify(shifts));
   }
 
   function isWeekend(dateStr) {
@@ -294,7 +294,7 @@
     let processed = processAllShifts(shifts);
     let displayList = [...processed].sort((a, b) => new Date(b.date) - new Date(a.date));
 
-    localStorage.setItem('extrahours_exact_data_v17', JSON.stringify(shifts));
+    localStorage.setItem('extrahours_exact_data_v19', JSON.stringify(shifts));
     
     const tbody = document.getElementById('logsTable');
     tbody.innerHTML = '';
@@ -374,24 +374,26 @@
     let monthTitle = (monthNames[mNum] || mNum) + " " + year;
 
     let csv = `\uFEFFΜΗΝΑΣ ΑΝΑΦΟΡΑΣ:;${monthTitle}\n\n`;
-    csv += `Ημερομηνία;Έναρξη;Λήξη;Συνολικές Ώρες;Ώρες Ανάπαυσης (<11h);Ποσό Ανάπαυσης (€);Συνολικό Ποσό\n`;
+    csv += `Ημερομηνία;Έναρξη;Λήξη;Συνολικές Ώρες;Ώρες Υπερωρίας;Ώρες Ανάπαυσης (<11h);Ποσό Ανάπαυσης (€);Συνολικό Ποσό\n`;
     
     let totalHoursSum = 0;
+    let totalOvertimeHoursSum = 0;
     let totalRestHoursSum = 0;
     let totalRestPaySum = 0;
     let totalPaySum = 0;
 
     processed.forEach(item => {
       totalHoursSum += Number(item.hours);
+      totalOvertimeHoursSum += Number(item.overtimeHours);
       totalRestHoursSum += Number(item.restHoursDeficit);
       totalRestPaySum += Number(item.extraRestPay);
       totalPaySum += Number(item.finalAmt);
       
-      csv += `${item.date};${item.start};${item.end};${item.hours.toFixed(2)};${item.restHoursDeficit.toFixed(2)};${item.extraRestPay.toFixed(2)};${item.finalAmt.toFixed(2)}\n`;
+      csv += `${item.date};${item.start};${item.end};${item.hours.toFixed(2)};${item.overtimeHours.toFixed(2)};${item.restHoursDeficit.toFixed(2)};${item.extraRestPay.toFixed(2)};${item.finalAmt.toFixed(2)}\n`;
     });
 
-    // Προσθήκη ευδιάκριτων αθροισμάτων κάτω-κάτω για κάθε στήλη
-    csv += `\n; ;ΣΥΝΟΛA:;${totalHoursSum.toFixed(2)};${totalRestHoursSum.toFixed(2)};${totalRestPaySum.toFixed(2)};${totalPaySum.toFixed(2)}\n`;
+    // Συγκεντρωτική γραμμή αθροισμάτων κάτω-κάτω συμπεριλαμβανομένων και των ωρών υπερωρίας
+    csv += `\n; ;ΣΥΝΟΛA:;${totalHoursSum.toFixed(2)};${totalOvertimeHoursSum.toFixed(2)};${totalRestHoursSum.toFixed(2)};${totalRestPaySum.toFixed(2)};${totalPaySum.toFixed(2)}\n`;
 
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
