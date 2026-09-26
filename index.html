@@ -188,7 +188,8 @@
   document.getElementById('workDate').value = todayStr;
   document.getElementById('exportMonth').value = todayStr.substring(0, 7);
 
-  let stored = localStorage.getItem('extrahours_v15');
+  // ΕΠΑΝΑΦΟΡΑ ΤΟΥ ΣΩΣΤΟΥ ΚΛΕΙΔΙΟΥ ΓΙΑ ΝΑ ΦΑΝΟΥΝ ΤΑ ΠΑΛΙΑ ΔΕΔΟΜΕΝΑ
+  let stored = localStorage.getItem('extrahours_v10');
   let shifts = stored ? JSON.parse(stored) : [];
 
   function toggleExportMode() {
@@ -230,7 +231,8 @@
 
   function saveAndRender() {
     shifts.sort((a, b) => new Date(a.startISO) - new Date(b.startISO));
-    localStorage.setItem('extrahours_v15', JSON.stringify(shifts));
+    // ΧΡΗΣΗ ΤΟΥ ΙΔΙΟΥ ΚΛΕΙΔΙΟΥ ΓΙΑ ΤΗΝ ΑΣΦΑΛΗ ΑΠΟΘΗΚΕΥΣΗ
+    localStorage.setItem('extrahours_v10', JSON.stringify(shifts));
     
     const tbody = document.getElementById('logsTable');
     tbody.innerHTML = '';
@@ -359,7 +361,6 @@
       periodTitle = `${monthNames[m]} ${y}`;
     }
 
-    // Καθαρή μορφοποίηση Excel (με τίτλο περιόδου στην κορυφή)
     let csv = `\uFEFF"ΠΕΡΙΟΔΟΣ ΑΝΑΦΟΡΑΣ:";"${periodTitle}"\n`;
     csv += 'Ημερομηνία;Έναρξη;Λήξη;Συνολικές Ώρες Βάρδιας;Ώρες Ανάπαυσης από Προηγούμενη;Υπερωρία (>8h);Έλλειψη Ανάπαυσης (<11h);Συνολικές Έξτρα Ώρες;Ωρομίσθιο (€);Συνολικό Ποσό (€)\n';
     let count = 0;
