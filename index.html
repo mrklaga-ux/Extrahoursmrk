@@ -4,8 +4,12 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Extrahoursmrk</title>
-  <!-- Σταθερή και δοκιμασμένη βιβλιοθήκη SheetJS για σωστό Excel (.xlsx) -->
-  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  
+  <!-- Χρησιμοποιούμε τη βιβλιοθήκη ExcelJS για σωστή μορφοποίηση στηλών -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js"></script>
+  <!-- Το FileSaver βοηθάει στο κατέβασμα του αρχείου σε όλα τα κινητά -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+  
   <style>
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
@@ -370,24 +374,28 @@
     }
   }
 
-  function exportExcelFile() {
+  // Αλλαγμένη συνάρτηση εξαγωγής με τη βιβλιοθήκη ExcelJS
+  async function exportExcelFile() {
     let processed = processAllShifts(shifts);
     if(processed.length === 0) return alert('Δεν υπάρχουν δεδομένα!');
 
-    let monthVal = document.getElementById('exportMonth').value;
-    let monthNames = {
-      "01": "Ιανουάριος", "02": "Φεβρουάριος", "03": "Μάρτιος", "04": "Απρίλιος",
-      "05": "Μάιος", "06": "Ιούνιος", "07": "Ιούλιος", "08": "Αύγουστος",
-      "09": "Σεπτέμβριος", "10": "Οκτώβριος", "11": "Νοέμβριος", "12": "Δεκέμβριος"
-    };
-    let [year, mNum] = monthVal.split('-');
-    let monthTitle = (monthNames[mNum] || mNum) + " " + year;
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet('Βάρδιες');
 
-    let ws_data = [
-      ["ΜΗΝΑΣ ΑΝΑΦΟΡΑΣ:", monthTitle],
-      [],
-      ["Ημερομηνία & Ημέρα", "Έναρξη", "Λήξη", "Συνολικές Ώρες", "Ώρες Υπερωρίας", "Ώρες Ανάπαυσης (<11h)", "Ποσό Ανάπαυσης (€)", "Συνολικό Ποσό"]
+    // Ορίζουμε τις στήλες και το πλάτος τους για να μην κόβονται τα γράμματα
+    worksheet.columns = [
+      { header: 'Ημερομηνία & Ημέρα', key: 'date', width: 25 },
+      { header: 'Έναρξη', key: 'start', width: 12 },
+      { header: 'Λήξη', key: 'end', width: 12 },
+      { header: 'Συνολικές Ώρες', key: 'totalHours', width: 18 },
+      { header: 'Ώρες Υπερωρίας', key: 'overtime', width: 18 },
+      { header: 'Ώρες Ανάπαυσης (<11h)', key: 'restHours', width: 22 },
+      { header: 'Ποσό Ανάπαυσης (€)', key: 'restPay', width: 20 },
+      { header: 'Συνολικό Ποσό', key: 'finalPay', width: 18 }
     ];
+
+    // Στιλιζάρισμα της γραμμής των επικεφαλίδων (Bold)
+    worksheet.getRow(1).font = { bold: true };
 
     let totalHoursSum = 0;
     let totalOvertimeHoursSum = 0;
@@ -403,33 +411,43 @@
       totalPaySum += Number(item.finalAmt);
       
       let dateWithDay = `${item.date} (${item.dayName})`;
-      ws_data.push([
-        dateWithDay,
-        item.start,
-        item.end,
-        Number(item.hours.toFixed(2)),
-        Number(item.overtimeHours.toFixed(2)),
-        Number(item.restHoursDeficit.toFixed(2)),
-        Number(item.extraRestPay.toFixed(2)),
-        Number(item.finalAmt.toFixed(2))
-      ]);
+      worksheet.addRow({
+        date: dateWithDay,
+        start: item.start,
+        end: item.end,
+        totalHours: Number(item.hours.toFixed(2)),
+        overtime: Number(item.overtimeHours.toFixed(2)),
+        restHours: Number(item.restHoursDeficit.toFixed(2)),
+        restPay: Number(item.extraRestPay.toFixed(2)),
+        finalPay: Number(item.finalAmt.toFixed(2))
+      });
     });
 
-    ws_data.push([]);
-    ws_data.push([
-      "ΣΥΝΟΛA:", "", "",
-      Number(totalHoursSum.toFixed(2)),
-      Number(totalOvertimeHoursSum.toFixed(2)),
-      Number(totalRestHoursSum.toFixed(2)),
-      Number(totalRestPaySum.toFixed(2)),
-      Number(totalPaySum.toFixed(2))
-    ]);
+    // Προσθήκη κενής γραμμής και της γραμμής των συνόλων
+    worksheet.addRow({});
+    const totalsRow = worksheet.addRow({
+      date: 'ΣΥΝΟΛΑ:',
+      totalHours: Number(totalHoursSum.toFixed(2)),
+      overtime: Number(totalOvertimeHoursSum.toFixed(2)),
+      restHours: Number(totalRestHoursSum.toFixed(2)),
+      restPay: Number(totalRestPaySum.toFixed(2)),
+      finalPay: Number(totalPaySum.toFixed(2))
+    });
+    totalsRow.font = { bold: true };
 
-    let ws = XLSX.utils.aoa_to_sheet(ws_data);
-    let wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Βάρδιες");
+    let monthVal = document.getElementById('exportMonth').value;
+    let monthNames = {
+      "01": "Ιανουάριος", "02": "Φεβρουάριος", "03": "Μάρτιος", "04": "Απρίλιος",
+      "05": "Μάιος", "06": "Ιούνιος", "07": "Ιούλιος", "08": "Αύγουστος",
+      "09": "Σεπτέμβριος", "10": "Οκτώβριος", "11": "Νοέμβριος", "12": "Δεκέμβριος"
+    };
+    let [year, mNum] = monthVal.split('-');
+    let monthTitle = (monthNames[mNum] || mNum) + "_" + year;
 
-    XLSX.writeFile(wb, `ExtraHours_${monthTitle}.xlsx`);
+    // Δημιουργία και κατέβασμα του αρχείου
+    const buffer = await workbook.xlsx.writeBuffer();
+    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    saveAs(blob, `ExtraHours_${monthTitle}.xlsx`);
   }
 
   function syncGoogleSheets() {
