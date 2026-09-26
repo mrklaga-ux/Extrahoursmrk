@@ -80,7 +80,6 @@
 
   <div class="card" id="settingsCard" style="border-color: #1976d2;">
     <h3 style="margin-top:0; color:#1976d2; font-size: 1.1rem;">Διαχείριση Backup & Επαναφοράς</h3>
-    <p style="font-size: 0.85rem; color: #aaa; margin-bottom: 10px;">Εδώ μπορείτε να αποθηκεύσετε ή να επαναφέρετε τα δεδομένα σας.</p>
     <button class="btn-backup" onclick="exportBackupJSON()">📤 Εξαγωγή Backup</button>
     <button class="btn-restore" onclick="triggerRestoreJSON()">📥 Εισαγωγή Backup</button>
     <input type="file" id="importFile" style="display:none" accept=".json" onchange="importBackupJSON(event)">
@@ -148,20 +147,42 @@
   </div>
 
 <script>
-  // Λογική: Καθαρισμός παλιών δεδομένων (version v6) για να φύγουν τα λάθος νούμερα
+  // Ακριβή δεδομένα από τη φωτογραφία του χρήστη (v7)
   let defaultShifts = [
-    {date: "2026-09-01", start: "10:00", end: "18:00", hours: 8.0, rate: 9.0, finalAmt: 72.0},
-    {date: "2026-09-05", start: "10:00", end: "18:00", hours: 8.0, rate: 9.0, finalAmt: 72.0},
-    {date: "2026-09-06", start: "10:00", end: "18:00", hours: 8.0, rate: 18.0, finalAmt: 144.0}, // Σάββατο
-    {date: "2026-09-12", start: "10:00", end: "18:00", hours: 8.0, rate: 18.0, finalAmt: 144.0}, // Σάββατο
-    {date: "2026-09-13", start: "10:00", end: "18:00", hours: 8.0, rate: 18.0, finalAmt: 144.0}, // Κυριακή
-    {date: "2026-09-26", start: "10:00", end: "18:00", hours: 8.0, rate: 18.0, finalAmt: 144.0}  // Σάββατο
+    {date: "2026-09-01", start: "09:15", end: "20:30"},
+    {date: "2026-09-02", start: "09:30", end: "01:30"},
+    {date: "2026-09-03", start: "09:30", end: "00:30"},
+    {date: "2026-09-04", start: "09:30", end: "01:30"},
+    {date: "2026-09-14", start: "10:00", end: "18:00"},
+    {date: "2026-09-15", start: "10:00", end: "18:00"},
+    {date: "2026-09-16", start: "09:00", end: "18:30"},
+    {date: "2026-09-17", start: "09:00", end: "01:00"},
+    {date: "2026-09-18", start: "08:00", end: "18:00"},
+    {date: "2026-09-21", start: "09:00", end: "18:30"},
+    {date: "2026-09-22", start: "09:00", end: "23:30"},
+    {date: "2026-09-23", start: "09:30", end: "00:30"},
+    {date: "2026-09-24", start: "09:00", end: "00:00"},
+    {date: "2026-09-25", start: "10:00", end: "23:45"}
   ];
 
-  let stored = localStorage.getItem('extrahours_exact_data_v6');
-  let shifts = stored ? JSON.parse(stored) : defaultShifts;
+  function processShifts(arr) {
+    return arr.map(item => {
+      let calc = calculateValues(item.date, item.start, item.end);
+      return {
+        date: item.date,
+        start: item.start,
+        end: item.end,
+        hours: calc.hours,
+        rate: calc.rate,
+        finalAmt: calc.finalAmt
+      };
+    });
+  }
+
+  let stored = localStorage.getItem('extrahours_exact_data_v7');
+  let shifts = stored ? JSON.parse(stored) : processShifts(defaultShifts);
   if (!stored) {
-    localStorage.setItem('extrahours_exact_data_v6', JSON.stringify(shifts));
+    localStorage.setItem('extrahours_exact_data_v7', JSON.stringify(shifts));
   }
 
   function isWeekend(dateStr) {
@@ -230,7 +251,7 @@
   function saveAndRender() {
     // Ταξινόμηση: πιο πρόσφατη ημερομηνία ΠΡΩΤΗ (φθίνουσα)
     shifts.sort((a, b) => new Date(b.date) - new Date(a.date));
-    localStorage.setItem('extrahours_exact_data_v6', JSON.stringify(shifts));
+    localStorage.setItem('extrahours_exact_data_v7', JSON.stringify(shifts));
     
     const tbody = document.getElementById('logsTable');
     tbody.innerHTML = '';
@@ -241,9 +262,11 @@
       totalHoursSum += Number(item.hours);
       totalPaySum += Number(item.finalAmt);
 
+      let badge = item.rate === 18 ? ' <span style="color:#ffeb3b; font-size:0.75rem;">(Σαβ/κο 18€)</span>' : '';
+
       tbody.innerHTML += `
         <tr class="clickable-row" onclick="openForm(${index})">
-          <td><b>${item.date}</b><br><span style="color:#aaa; font-size:0.8rem;">🕒 ${item.start} - ${item.end} (${item.rate === 18 ? 'Σαβ/κο 18€' : 'Καθημ. 9€'})</span></td>
+          <td><b>${item.date}</b>${badge}<br><span style="color:#aaa; font-size:0.8rem;">🕒 ${item.start} - ${item.end}</span></td>
           <td>Ώρες: <b>${Number(item.hours).toFixed(2)}h</b></td>
           <td><b>€${Number(item.finalAmt).toFixed(2)}</b></td>
         </tr>`;
@@ -261,7 +284,7 @@
 
     if(!dateStr) return alert('Συμπλήρωσε ημερομηνία!');
 
-    // Αυτόματος υπολογισμός με βάση τη σωστή ημερομηνία (9€ ή 18€)
+    // Αυτόματος υπολογισμός (9€ ή 18€ ανάλογα με τη μέρα)
     let calc = calculateValues(dateStr, start, end);
 
     const entry = {
