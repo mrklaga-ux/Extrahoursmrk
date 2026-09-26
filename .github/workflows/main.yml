@@ -11,24 +11,15 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
 
-    - name: Set up Python
-      uses: actions/setup-python@v5
+    - name: Build with Buildozer Docker
+      uses: kivy/buildozer-action@v1
       with:
-        python-version: '3.10'
-
-    - name: Install dependencies
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y build-essential git ffmpeg libsdl2-dev libsdl2-image-dev libsdl2-mixer-dev libsdl2-ttf-dev libportmidi-dev libswscale-dev libavformat-dev libavcodec-dev zlib1g-dev autoconf automake libtool pkg-config m4 libssl-dev libffi-dev openjdk-17-jdk zip unzip aidl
-        pip install --upgrade pip
-        pip install "cython<3.0.0" buildozer
-
-    - name: Build APK with Buildozer
-      run: |
-        buildozer -v android debug
+        command: buildozer -v android debug
+        subfolder: .
 
     - name: Upload APK Artifact
       uses: actions/upload-artifact@v4
       with:
         name: ExtraHours-APK
         path: bin/*.apk
+
