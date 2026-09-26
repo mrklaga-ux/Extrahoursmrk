@@ -80,9 +80,9 @@
 
   <div class="card" id="settingsCard" style="border-color: #1976d2;">
     <h3 style="margin-top:0; color:#1976d2; font-size: 1.1rem;">Διαχείριση Backup & Επαναφοράς</h3>
-    <p style="font-size: 0.85rem; color: #aaa; margin-bottom: 10px;">Εδώ μπορείτε να αποθηκεύσετε ή να επαναφέρετε τα δεδομένα σας με ασφάλεια.</p>
-    <button class="btn-backup" onclick="exportBackupJSON()">📤 Εξαγωγή Backup (Αποθήκευση)</button>
-    <button class="btn-restore" onclick="triggerRestoreJSON()">📥 Εισαγωγή Backup (Επαναφορά)</button>
+    <p style="font-size: 0.85rem; color: #aaa; margin-bottom: 10px;">Εδώ μπορείτε να αποθηκεύσετε ή να επαναφέρετε τα δεδομένα σας.</p>
+    <button class="btn-backup" onclick="exportBackupJSON()">📤 Εξαγωγή Backup</button>
+    <button class="btn-restore" onclick="triggerRestoreJSON()">📥 Εισαγωγή Backup</button>
     <input type="file" id="importFile" style="display:none" accept=".json" onchange="importBackupJSON(event)">
   </div>
 
@@ -98,10 +98,10 @@
     <input type="time" id="startTime" value="10:00" onchange="livePreview()">
 
     <label>Ώρα Λήξης</label>
-    <input type="time" id="endTime" value="20:00" onchange="livePreview()">
+    <input type="time" id="endTime" value="18:00" onchange="livePreview()">
 
     <label>Συνολικές Ώρες</label>
-    <input type="number" step="0.25" id="totalShiftHours" value="10.00" readonly>
+    <input type="number" step="0.25" id="totalShiftHours" value="8.00" readonly>
 
     <label>Ωρομίσθιο (Καθημερινή: 9€ / Σαβ/κο: 18€)</label>
     <input type="number" step="0.25" id="miscHours" value="9.00" readonly>
@@ -129,12 +129,12 @@
     <label>Μήνας Αναφοράς</label>
     <input type="month" id="exportMonth" value="2026-09">
 
-    <button class="btn-sec" onclick="exportCSV()">📊 Εξαγωγή σε Καθαρό Excel (CSV με Σύνολα)</button>
+    <button class="btn-sec" onclick="exportCSV()">📊 Εξαγωγή σε Καθαρό Excel (CSV)</button>
     <button class="btn-sheets" onclick="syncGoogleSheets()">🟢 Οδηγίες για Google Sheets</button>
   </div>
 
   <div class="card">
-    <h3 style="margin-top:0;">Ιστορικό Σεπτεμβρίου 2026 <span style="font-size:0.75rem; color:#aaa; font-weight:normal;">(Πατήστε μια γραμμή για διόρθωση)</span></h3>
+    <h3 style="margin-top:0;">Ιστορικό Βαρδιών <span style="font-size:0.75rem; color:#aaa; font-weight:normal;">(Πατήστε μια γραμμή για διόρθωση)</span></h3>
     <table>
       <thead>
         <tr>
@@ -148,28 +148,20 @@
   </div>
 
 <script>
+  // Λογική: Καθαρισμός παλιών δεδομένων (version v6) για να φύγουν τα λάθος νούμερα
   let defaultShifts = [
-    {date: "2026-09-01", start: "09:15", end: "20:30", hours: 11.25, rate: 9.00, finalAmt: 101.25},
-    {date: "2026-09-02", start: "09:30", end: "01:30", hours: 16.00, rate: 9.00, finalAmt: 144.00},
-    {date: "2026-09-03", start: "09:30", end: "00:30", hours: 15.00, rate: 9.00, finalAmt: 135.00},
-    {date: "2026-09-04", start: "09:30", end: "01:30", hours: 16.00, rate: 9.00, finalAmt: 144.00},
-    {date: "2026-09-14", start: "10:00", end: "18:00", hours: 8.00, rate: 9.00, finalAmt: 72.00},
-    {date: "2026-09-15", start: "10:00", end: "18:00", hours: 8.00, rate: 9.00, finalAmt: 72.00},
-    {date: "2026-09-16", start: "09:00", end: "18:30", hours: 9.50, rate: 9.00, finalAmt: 85.50},
-    {date: "2026-09-17", start: "09:00", end: "01:00", hours: 16.00, rate: 9.00, finalAmt: 144.00},
-    {date: "2026-09-18", start: "08:00", end: "18:00", hours: 10.00, rate: 9.00, finalAmt: 90.00},
-    {date: "2026-09-21", start: "09:00", end: "18:30", hours: 9.50, rate: 9.00, finalAmt: 85.50},
-    {date: "2026-09-22", start: "09:00", end: "23:30", hours: 14.50, rate: 9.00, finalAmt: 130.50},
-    {date: "2026-09-23", start: "09:30", end: "00:30", hours: 15.00, rate: 9.00, finalAmt: 135.00},
-    {date: "2026-09-24", start: "09:00", end: "00:00", hours: 15.00, rate: 9.00, finalAmt: 135.00},
-    {date: "2026-09-25", start: "10:00", end: "23:45", hours: 13.75, rate: 9.00, finalAmt: 123.75},
-    {date: "2026-09-26", start: "10:00", end: "20:00", hours: 10.00, rate: 18.00, finalAmt: 180.00}
+    {date: "2026-09-01", start: "10:00", end: "18:00", hours: 8.0, rate: 9.0, finalAmt: 72.0},
+    {date: "2026-09-05", start: "10:00", end: "18:00", hours: 8.0, rate: 9.0, finalAmt: 72.0},
+    {date: "2026-09-06", start: "10:00", end: "18:00", hours: 8.0, rate: 18.0, finalAmt: 144.0}, // Σάββατο
+    {date: "2026-09-12", start: "10:00", end: "18:00", hours: 8.0, rate: 18.0, finalAmt: 144.0}, // Σάββατο
+    {date: "2026-09-13", start: "10:00", end: "18:00", hours: 8.0, rate: 18.0, finalAmt: 144.0}, // Κυριακή
+    {date: "2026-09-26", start: "10:00", end: "18:00", hours: 8.0, rate: 18.0, finalAmt: 144.0}  // Σάββατο
   ];
 
-  let stored = localStorage.getItem('extrahours_exact_data_v5');
+  let stored = localStorage.getItem('extrahours_exact_data_v6');
   let shifts = stored ? JSON.parse(stored) : defaultShifts;
   if (!stored) {
-    localStorage.setItem('extrahours_exact_data_v5', JSON.stringify(shifts));
+    localStorage.setItem('extrahours_exact_data_v6', JSON.stringify(shifts));
   }
 
   function isWeekend(dateStr) {
@@ -218,7 +210,7 @@
       let todayStr = new Date().toISOString().substring(0, 10);
       document.getElementById('workDate').value = todayStr;
       document.getElementById('startTime').value = '10:00';
-      document.getElementById('endTime').value = '20:00';
+      document.getElementById('endTime').value = '18:00';
       deleteBtn.style.display = 'none';
     } else {
       document.getElementById('formTitle').innerText = 'Επεξεργασία Βάρδιας';
@@ -238,7 +230,7 @@
   function saveAndRender() {
     // Ταξινόμηση: πιο πρόσφατη ημερομηνία ΠΡΩΤΗ (φθίνουσα)
     shifts.sort((a, b) => new Date(b.date) - new Date(a.date));
-    localStorage.setItem('extrahours_exact_data_v5', JSON.stringify(shifts));
+    localStorage.setItem('extrahours_exact_data_v6', JSON.stringify(shifts));
     
     const tbody = document.getElementById('logsTable');
     tbody.innerHTML = '';
@@ -251,7 +243,7 @@
 
       tbody.innerHTML += `
         <tr class="clickable-row" onclick="openForm(${index})">
-          <td><b>${item.date}</b><br><span style="color:#aaa; font-size:0.8rem;">🕒 ${item.start} - ${item.end}</span></td>
+          <td><b>${item.date}</b><br><span style="color:#aaa; font-size:0.8rem;">🕒 ${item.start} - ${item.end} (${item.rate === 18 ? 'Σαβ/κο 18€' : 'Καθημ. 9€'})</span></td>
           <td>Ώρες: <b>${Number(item.hours).toFixed(2)}h</b></td>
           <td><b>€${Number(item.finalAmt).toFixed(2)}</b></td>
         </tr>`;
@@ -269,7 +261,7 @@
 
     if(!dateStr) return alert('Συμπλήρωσε ημερομηνία!');
 
-    // Υπολογισμός την ώρα της αποθήκευσης (είτε είναι νέα είτε διόρθωση παλιάς)
+    // Αυτόματος υπολογισμός με βάση τη σωστή ημερομηνία (9€ ή 18€)
     let calc = calculateValues(dateStr, start, end);
 
     const entry = {
@@ -305,31 +297,28 @@
   function exportCSV() {
     if(shifts.length === 0) return alert('Δεν υπάρχουν δεδομένα!');
 
-    let csv = '\uFEFFΠΕΡΙΟΔΟΣ ΑΝΑΦΟΡΑΣ: Σεπτέμβριος 2026\n';
-    csv += 'Ημερομηνία;Έναρξη;Λήξη;Συνολικές Ώρες;Ωρομίσθιο (€);Τελικό Ποσό/Σύνολο\n';
-
+    let csv = '\uFEFFΗμερομηνία;Έναρξη;Λήξη;Συνολικές Ώρες;Ωρομίσθιο (€);Τελικό Ποσό\n';
     let totalHoursSum = 0;
     let totalPaySum = 0;
 
     shifts.forEach(item => {
       totalHoursSum += Number(item.hours);
       totalPaySum += Number(item.finalAmt);
-
       csv += `${item.date};${item.start};${item.end};${item.hours.toFixed(2)};${item.rate.toFixed(2)};${item.finalAmt.toFixed(2)}\n`;
     });
 
     csv += `\n; ;ΣΥΝΟΛΟ ΩΡΩΝ:;${totalHoursSum.toFixed(2)}; \n`;
-    csv += `; ;ΤΕΛΙΚΟ ΠΟΣΟ ΜΗΝΑ:; ;${totalPaySum.toFixed(2)}\n`;
+    csv += `; ;ΤΕΛΙΚΟ ΠΟΣΟ:; ;${totalPaySum.toFixed(2)}\n`;
 
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
-    link.download = `ExtraHours_2026-09_Final.csv`;
+    link.download = `ExtraHours_Report.csv`;
     link.click();
   }
 
   function syncGoogleSheets() {
-    alert("Για Google Sheets:\n1. Κάνε εξαγωγή CSV.\n2. Άνοιξε το Google Drive, δημιούργησε νέο Google Sheet.\n3. Πήγαινε Αρχείο -> Εισαγωγή και ανέβασε το αρχείο CSV. Θα ανοίξει τέλεια με τις στήλες και τα σύνολα κάτω!");
+    alert("Για Google Sheets:\n1. Κάνε εξαγωγή CSV.\n2. Άνοιξε το Google Drive, δημιούργησε νέο Google Sheet.\n3. Πήγαινε Αρχείο -> Εισαγωγή και ανέβασε το αρχείο CSV.");
   }
 
   function exportBackupJSON() {
