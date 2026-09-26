@@ -92,7 +92,7 @@
     <input type="hidden" id="editIndex" value="-1">
 
     <label>Ημερομηνία</label>
-    <input type="date" id="workDate">
+    <input type="date" id="workDate" onchange="calculateAmounts()">
 
     <label>Ώρα Έναρξης</label>
     <input type="time" id="startTime" value="12:00">
@@ -104,7 +104,7 @@
     <input type="number" step="0.25" id="totalShiftHours" value="8.00">
 
     <label>Ώρες Ανάπαυσης</label>
-    <input type="number" step="0.25" id="restHours" value="0.00">
+    <input type="number" step="0.25" id="restHours" value="0.00" oninput="calculateAmounts()">
 
     <label>Κανονικές Ώρες</label>
     <input type="number" step="0.25" id="normalHours" value="0.00">
@@ -113,9 +113,9 @@
     <input type="number" step="0.25" id="overtimeHours" value="0.00">
 
     <label>Σύνολο Υπερωριών</label>
-    <input type="number" step="0.25" id="totalOvertime" value="0.00">
+    <input type="number" step="0.25" id="totalOvertime" value="0.00" oninput="calculateAmounts()">
 
-    <label>Διάφορα</label>
+    <label>Διάφορα (Ωρομίσθιο: 9€ / Σαβ/κο: 18€)</label>
     <input type="number" step="0.25" id="miscHours" value="9.00">
 
     <label>Τελικό Ποσό / Σύνολο (€)</label>
@@ -178,10 +178,26 @@
     {date: "2026-09-26", start: "13:00", end: "00:00", totalShift: 24.00, rest: 0.00, normal: 0.00, overtime: 0.00, totalOT: 0.00, misc: 9.00, finalAmt: 0.00}
   ];
 
-  let stored = localStorage.getItem('extrahours_exact_data_v2');
+  let stored = localStorage.getItem('extrahours_exact_data_v3');
   let shifts = stored ? JSON.parse(stored) : defaultShifts;
   if (!stored) {
-    localStorage.setItem('extrahours_exact_data_v2', JSON.stringify(shifts));
+    localStorage.setItem('extrahours_exact_data_v3', JSON.stringify(shifts));
+  }
+
+  function isWeekend(dateStr) {
+    if (!dateStr) return false;
+    let d = new Date(dateStr);
+    let day = d.getDay();
+    return (day === 0 || day === 6); // 0 = Κυριακή, 6 = Σάββατο
+  }
+
+  function calculateAmounts() {
+    let dateStr = document.getElementById('workDate').value;
+    let totalOT = parseFloat(document.getElementById('totalOvertime').value) || 0;
+    let rate = isWeekend(dateStr) ? 18.0 : 9.0;
+    
+    document.getElementById('miscHours').value = rate.toFixed(2);
+    document.getElementById('finalAmount').value = (totalOT * rate).toFixed(2);
   }
 
   function toggleSettings() {
@@ -194,7 +210,8 @@
     const deleteBtn = document.getElementById('deleteBtn');
     if (index === -1) {
       document.getElementById('formTitle').innerText = 'Νέα Καταχώρηση Βάρδιας';
-      document.getElementById('workDate').value = new Date().toISOString().substring(0, 10);
+      let todayStr = new Date().toISOString().substring(0, 10);
+      document.getElementById('workDate').value = todayStr;
       document.getElementById('startTime').value = '12:00';
       document.getElementById('endTime').value = '20:00';
       document.getElementById('totalShiftHours').value = '8.00';
@@ -202,8 +219,6 @@
       document.getElementById('normalHours').value = '0.00';
       document.getElementById('overtimeHours').value = '0.00';
       document.getElementById('totalOvertime').value = '0.00';
-      document.getElementById('miscHours').value = '9.00';
-      document.getElementById('finalAmount').value = '0.00';
       deleteBtn.style.display = 'none';
     } else {
       document.getElementById('formTitle').innerText = 'Επεξεργασία Βάρδιας';
@@ -220,6 +235,7 @@
       document.getElementById('finalAmount').value = item.finalAmt;
       deleteBtn.style.display = 'block';
     }
+    calculateAmounts();
     document.getElementById('formCard').style.display = 'block';
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
@@ -228,7 +244,7 @@
 
   function saveAndRender() {
     shifts.sort((a, b) => new Date(a.date) - new Date(b.date));
-    localStorage.setItem('extrahours_exact_data_v2', JSON.stringify(shifts));
+    localStorage.setItem('extrahours_exact_data_v3', JSON.stringify(shifts));
     
     const tbody = document.getElementById('logsTable');
     tbody.innerHTML = '';
@@ -262,7 +278,7 @@
       normal: parseFloat(document.getElementById('normalHours').value) || 0,
       overtime: parseFloat(document.getElementById('overtimeHours').value) || 0,
       totalOT: parseFloat(document.getElementById('totalOvertime').value) || 0,
-      misc: parseFloat(document.getElementById('miscHours').value) || 0,
+      misc: parseFloat(document.getElementById('miscHours').value) || 9.0,
       finalAmt: parseFloat(document.getElementById('finalAmount').value) || 0
     };
 
@@ -281,7 +297,7 @@
   function deleteCurrentEntry() {
     const editIndex = parseInt(document.getElementById('editIndex').value);
     if (editIndex >= 0) {
-      if (confirm('Σίγουρα θέλεις να διαγράψεις αυτή τη βάρδια;')) {
+      if (confirm('Σίγουρα θέλεις να διαγράψεις αυτή τη βάρδια?')) {
         shifts.splice(editIndex, 1);
         saveAndRender();
         closeForm();
@@ -293,7 +309,7 @@
     if(shifts.length === 0) return alert('Δεν υπάρχουν δεδομένα!');
 
     let csv = '\uFEFFΠΕΡΙΟΔΟΣ ΑΝΑΦΟΡΑΣ: Σεπτέμβριος 2026\n';
-    csv += 'Ημερομηνία;Έναρξη;Λήξη;Συνολικές Ώρες Βάρδιας;Ώρες Ανάπαυσης;Κανονικές Ώρες;Υπερωρίες;Σύνολο Υπερωριών;Διάφορα;Τελικό Ποσό/Σύνολο\n';
+    csv += 'Ημερομηνία;Έναρξη;Λήξη;Συνολικές Ώρες Βάρδιας;Ώρες Ανάπαυσης;Κανονικές Ώρες;Υπερωρίες;Σύνολο Υπερωριών;Ωρομίσθιο (€);Τελικό Ποσό/Σύνολο\n';
 
     let totalOTSum = 0;
     let totalPaySum = 0;
@@ -302,7 +318,7 @@
       totalOTSum += Number(item.totalOT);
       totalPaySum += Number(item.finalAmt);
 
-      csv += `${item.date};${item.start};${item.end};${item.totalShift.toFixed(2)};${item.rest.toFixed(2)};${item.normal.toFixed(2)};${item.overtime.toFixed(2)};${item.totalOT.toFixed(2)};${item.misc.toFixed(2)};${item.finalAmt.toFixed(2)}\n`;
+      csv += `${item.date};${item.start};${item.end};${item.totalShift.toFixed(2)};${item.rest.toFixed(2)};${item.normal.toFixed(2)};${item.overtime.toFixed(2)};${item.totalOT.toFixed(2)};${Number(item.misc).toFixed(2)};${item.finalAmt.toFixed(2)}\n`;
     });
 
     csv += `\n; ; ; ; ; ; ;ΣΥΝΟΛΟ ΥΠΕΡΩΡΙΩΝ:;${totalOTSum.toFixed(2)}; \n`;
