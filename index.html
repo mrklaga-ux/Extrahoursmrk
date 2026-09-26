@@ -147,29 +147,29 @@
   </div>
 
 <script>
-  // ΑΚΡΙΒΗ ΔΕΔΟΜΕΝΑ ΑΠΟ ΤΟ EXCEL ΤΟΥ ΧΡΗΣΤΗ (Σεπτέμβριος 2026)
+  // ΔΙΟΡΘΩΜΕΝΑ ΣΤΟΙΧΕΙΑ ΜΕ Τis ΑΚΡΙΒΕΙΣ ΩΡΕΣ ΑΠΟ ΤΟ EXCEL (Σεπτέμβριος 2026)
   let defaultShifts = [
-    {date: "2026-09-01", start: "12:15", end: "23:30", totalShift: 11.25, rest: 24.00, normal: 3.25, overtime: 0.00, totalOT: 3.25, misc: 9.00, finalAmt: 29.25},
-    {date: "2026-09-02", start: "12:30", end: "04:30", totalShift: 16.00, rest: 13.00, normal: 8.00, overtime: 0.00, totalOT: 8.00, misc: 9.00, finalAmt: 72.00},
-    {date: "2026-09-03", start: "12:30", end: "03:30", totalShift: 15.00, rest: 8.00, normal: 7.00, overtime: 3.00, totalOT: 10.00, misc: 9.00, finalAmt: 90.00},
-    {date: "2026-09-04", start: "12:30", end: "04:30", totalShift: 16.00, rest: 9.00, normal: 8.00, overtime: 2.00, totalOT: 10.00, misc: 9.00, finalAmt: 90.00},
-    {date: "2026-09-14", start: "13:00", end: "21:00", totalShift: 8.00, rest: 224.50, normal: 0.00, overtime: 0.00, totalOT: 0.00, misc: 9.00, finalAmt: 0.00},
-    {date: "2026-09-15", start: "13:00", end: "21:00", totalShift: 8.00, rest: 16.00, normal: 0.00, overtime: 0.00, totalOT: 0.00, misc: 9.00, finalAmt: 0.00},
-    {date: "2026-09-16", start: "12:00", end: "21:30", totalShift: 9.50, rest: 15.00, normal: 1.50, overtime: 0.00, totalOT: 1.50, misc: 9.00, finalAmt: 13.50},
-    {date: "2026-09-17", start: "12:00", end: "04:00", totalShift: 16.00, rest: 14.50, normal: 8.00, overtime: 0.00, totalOT: 8.00, misc: 9.00, finalAmt: 72.00},
-    {date: "2026-09-18", start: "11:00", end: "21:00", totalShift: 10.00, rest: 7.00, normal: 2.00, overtime: 4.00, totalOT: 6.00, misc: 9.00, finalAmt: 54.00},
-    {date: "2026-09-21", start: "12:00", end: "21:30", totalShift: 9.50, rest: 63.00, normal: 1.50, overtime: 0.00, totalOT: 1.50, misc: 9.00, finalAmt: 13.50},
-    {date: "2026-09-22", start: "12:00", end: "02:30", totalShift: 14.50, rest: 14.50, normal: 6.50, overtime: 0.00, totalOT: 6.50, misc: 9.00, finalAmt: 58.50},
-    {date: "2026-09-23", start: "12:30", end: "03:30", totalShift: 15.00, rest: 10.00, normal: 7.00, overtime: 1.00, totalOT: 8.00, misc: 9.00, finalAmt: 72.00},
-    {date: "2026-09-24", start: "12:00", end: "03:00", totalShift: 15.00, rest: 8.50, normal: 7.00, overtime: 2.50, totalOT: 9.50, misc: 9.00, finalAmt: 85.50},
-    {date: "2026-09-25", start: "13:00", end: "02:45", totalShift: 13.75, rest: 10.00, normal: 5.75, overtime: 1.00, totalOT: 6.75, misc: 9.00, finalAmt: 60.75},
+    {date: "2026-09-01", start: "09:15", end: "20:30", totalShift: 11.25, rest: 24.00, normal: 3.25, overtime: 0.00, totalOT: 3.25, misc: 9.00, finalAmt: 29.25},
+    {date: "2026-09-02", start: "09:30", end: "01:30", totalShift: 16.00, rest: 13.00, normal: 8.00, overtime: 0.00, totalOT: 8.00, misc: 9.00, finalAmt: 72.00},
+    {date: "2026-09-03", start: "09:30", end: "00:30", totalShift: 15.00, rest: 8.00, normal: 7.00, overtime: 3.00, totalOT: 10.00, misc: 9.00, finalAmt: 90.00},
+    {date: "2026-09-04", start: "09:30", end: "01:30", totalShift: 16.00, rest: 9.00, normal: 8.00, overtime: 2.00, totalOT: 10.00, misc: 9.00, finalAmt: 90.00},
+    {date: "2026-09-14", start: "10:00", end: "18:00", totalShift: 8.00, rest: 224.50, normal: 0.00, overtime: 0.00, totalOT: 0.00, misc: 9.00, finalAmt: 0.00},
+    {date: "2026-09-15", start: "10:00", end: "18:00", totalShift: 8.00, rest: 16.00, normal: 0.00, overtime: 0.00, totalOT: 0.00, misc: 9.00, finalAmt: 0.00},
+    {date: "2026-09-16", start: "09:00", end: "18:30", totalShift: 9.50, rest: 15.00, normal: 1.50, overtime: 0.00, totalOT: 1.50, misc: 9.00, finalAmt: 13.50},
+    {date: "2026-09-17", start: "09:00", end: "01:00", totalShift: 16.00, rest: 14.50, normal: 8.00, overtime: 0.00, totalOT: 8.00, misc: 9.00, finalAmt: 72.00},
+    {date: "2026-09-18", start: "08:00", end: "18:00", totalShift: 10.00, rest: 7.00, normal: 2.00, overtime: 4.00, totalOT: 6.00, misc: 9.00, finalAmt: 54.00},
+    {date: "2026-09-21", start: "09:00", end: "18:30", totalShift: 9.50, rest: 63.00, normal: 1.50, overtime: 0.00, totalOT: 1.50, misc: 9.00, finalAmt: 13.50},
+    {date: "2026-09-22", start: "09:00", end: "23:30", totalShift: 14.50, rest: 14.50, normal: 6.50, overtime: 0.00, totalOT: 6.50, misc: 9.00, finalAmt: 58.50},
+    {date: "2026-09-23", start: "09:30", end: "00:30", totalShift: 15.00, rest: 10.00, normal: 7.00, overtime: 1.00, totalOT: 8.00, misc: 9.00, finalAmt: 72.00},
+    {date: "2026-09-24", start: "09:00", end: "00:00", totalShift: 15.00, rest: 8.50, normal: 7.00, overtime: 2.50, totalOT: 9.50, misc: 9.00, finalAmt: 85.50},
+    {date: "2026-09-25", start: "10:00", end: "23:45", totalShift: 13.75, rest: 10.00, normal: 5.75, overtime: 1.00, totalOT: 6.75, misc: 9.00, finalAmt: 60.75},
     {date: "2026-09-26", start: "13:00", end: "00:00", totalShift: 24.00, rest: 0.00, normal: 0.00, overtime: 0.00, totalOT: 0.00, misc: 9.00, finalAmt: 0.00}
   ];
 
-  let stored = localStorage.getItem('extrahours_exact_data_v1');
+  let stored = localStorage.getItem('extrahours_exact_data_v2');
   let shifts = stored ? JSON.parse(stored) : defaultShifts;
   if (!stored) {
-    localStorage.setItem('extrahours_exact_data_v1', JSON.stringify(shifts));
+    localStorage.setItem('extrahours_exact_data_v2', JSON.stringify(shifts));
   }
 
   function openForm(index = -1) {
@@ -211,7 +211,7 @@
 
   function saveAndRender() {
     shifts.sort((a, b) => new Date(a.date) - new Date(b.date));
-    localStorage.setItem('extrahours_exact_data_v1', JSON.stringify(shifts));
+    localStorage.setItem('extrahours_exact_data_v2', JSON.stringify(shifts));
     
     const tbody = document.getElementById('logsTable');
     tbody.innerHTML = '';
@@ -275,7 +275,6 @@
   function exportCSV() {
     if(shifts.length === 0) return alert('Δεν υπάρχουν δεδομένα!');
 
-    // Επικεφαλίδα παρόμοια με το Excel σου
     let csv = '\uFEFFΠΕΡΙΟΔΟΣ ΑΝΑΦΟΡΑΣ: Σεπτέμβριος 2026\n';
     csv += 'Ημερομηνία;Έναρξη;Λήξη;Συνολικές Ώρες Βάρδιας;Ώρες Ανάπαυσης;Κανονικές Ώρες;Υπερωρίες;Σύνολο Υπερωριών;Διάφορα;Τελικό Ποσό/Σύνολο\n';
 
@@ -289,7 +288,6 @@
       csv += `${item.date};${item.start};${item.end};${item.totalShift.toFixed(2)};${item.rest.toFixed(2)};${item.normal.toFixed(2)};${item.overtime.toFixed(2)};${item.totalOT.toFixed(2)};${item.misc.toFixed(2)};${item.finalAmt.toFixed(2)}\n`;
     });
 
-    // Προσθήκη γραμμών συνόλων κάτω-κάτω στο CSV όπως ζήτησες
     csv += `\n; ; ; ; ; ; ;ΣΥΝΟΛΟ ΥΠΕΡΩΡΙΩΝ:;${totalOTSum.toFixed(2)}; \n`;
     csv += `; ; ; ; ; ; ;ΤΕΛΙΚΟ ΠΟΣΟ ΜΗΝΑ:; ;${totalPaySum.toFixed(2)}\n`;
 
