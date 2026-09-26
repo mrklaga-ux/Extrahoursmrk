@@ -1,1 +1,280 @@
 
+<!DOCTYPE html>
+<html lang="el">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Extrahoursmrk</title>
+  <style>
+    :root {
+      --bg: #121212;
+      --card: #1e1e1e;
+      --accent: #00e676;
+      --text: #ffffff;
+      --subtext: #a0a0a0;
+      --danger: #ff5252;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      margin: 0;
+      padding: 16px;
+    }
+    .container {
+      max-width: 500px;
+      margin: 0 auto;
+    }
+    h1 {
+      text-align: center;
+      color: var(--accent);
+      margin-bottom: 20px;
+    }
+    .card {
+      background: var(--card);
+      padding: 16px;
+      border-radius: 12px;
+      margin-bottom: 16px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+    }
+    label {
+      display: block;
+      font-size: 0.9rem;
+      color: var(--subtext);
+      margin-bottom: 6px;
+    }
+    input, select, button {
+      width: 100%;
+      padding: 12px;
+      border-radius: 8px;
+      border: 1px solid #333;
+      background: #2a2a2a;
+      color: #fff;
+      font-size: 1rem;
+      box-sizing: border-box;
+      margin-bottom: 12px;
+    }
+    .time-group {
+      display: flex;
+      gap: 8px;
+    }
+    .time-group select {
+      flex: 1;
+    }
+    button.btn-main {
+      background: var(--accent);
+      color: #000;
+      font-weight: bold;
+      border: none;
+      cursor: pointer;
+      margin-top: 8px;
+    }
+    button.btn-sec {
+      background: #333;
+      color: #fff;
+      border: 1px solid #444;
+    }
+    .summary-val {
+      font-size: 1.4rem;
+      font-weight: bold;
+      color: var(--accent);
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+      font-size: 0.85rem;
+    }
+    th, td {
+      padding: 8px;
+      text-align: left;
+      border-bottom: 1px solid #333;
+    }
+    th { color: var(--subtext); }
+    .btn-del {
+      background: var(--danger);
+      color: #fff;
+      border: none;
+      padding: 4px 8px;
+      border-radius: 4px;
+      width: auto;
+      margin: 0;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <h1>Extrahoursmrk</h1>
+
+  <!-- ΦΟΡΜΑ ΚΑΤΑΧΩΡΗΣΗΣ -->
+  <div class="card">
+    <label>Ημερομηνία</label>
+    <input type="date" id="workDate">
+
+    <label>Ώρα Έναρξης</label>
+    <div class="time-group">
+      <select id="startHour"></select>
+      <select id="startMin">
+        <option value="00">:00</option>
+        <option value="15">:15</option>
+        <option value="30">:30</option>
+        <option value="45">:45</option>
+      </select>
+    </div>
+
+    <label>Ώρα Λήξης</label>
+    <div class="time-group">
+      <select id="endHour"></select>
+      <select id="endMin">
+        <option value="00">:00</option>
+        <option value="15">:15</option>
+        <option value="30">:30</option>
+        <option value="45">:45</option>
+      </select>
+    </div>
+
+    <label>Διάλειμμα / Ανάπαυση (λεπτά)</label>
+    <select id="breakMins">
+      <option value="0">0 λεπτά</option>
+      <option value="15">15 λεπτά</option>
+      <option value="30">30 λεπτά</option>
+      <option value="45">45 λεπτά</option>
+      <option value="60">60 λεπτά</option>
+    </select>
+
+    <button class="btn-main" onclick="addEntry()">Καταχώρηση Βάρδιας</button>
+  </div>
+
+  <!-- ΣΥΝΟΛΑ -->
+  <div class="card">
+    <label>Συνολικές Ώρες</label>
+    <div class="summary-val" id="totalHours">0.00 hrs</div>
+    <br>
+    <label>Συνολική Αμοιβή (€9/ώρα + Υπερωρίες)</label>
+    <div class="summary-val" id="totalPay">€0.00</div>
+  </div>
+
+  <!-- ΕΝΕΡΓΕΙΕΣ -->
+  <div class="card">
+    <button class="btn-sec" onclick="exportToExcel()">📊 Εξαγωγή σε Excel (CSV)</button>
+    <button class="btn-sec" onclick="sendToHR()">✉️ Αποστολή στο HR</button>
+  </div>
+
+  <!-- ΛΙΣΤΑ ΚΑΤΑΧΩΡΗΣΕΩΝ -->
+  <div class="card">
+    <h3>Ιστορικό</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Ημερ.</th>
+          <th>Ώρες</th>
+          <th>Ποσό</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="logsTable"></tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+  // Αρχικοποίηση ωρών (00-23)
+  const sHour = document.getElementById('startHour');
+  const eHour = document.getElementById('endHour');
+  for(let i=0; i<24; i++){
+    let h = i < 10 ? '0' + i : i;
+    sHour.innerHTML += `<option value="${h}">${h}</option>`;
+    eHour.innerHTML += `<option value="${h}">${h}</option>`;
+  }
+  
+  // Προεπιλογή σημερινής ημερομηνίας
+  document.getElementById('workDate').value = new Date().toISOString().substring(0, 10);
+
+  let entries = JSON.parse(localStorage.getItem('extrahours_db')) || [];
+
+  function saveAndRender() {
+    localStorage.setItem('extrahours_db', JSON.stringify(entries));
+    const tbody = document.getElementById('logsTable');
+    tbody.innerHTML = '';
+    
+    let sumHours = 0;
+    let sumPay = 0;
+
+    entries.forEach((item, index) => {
+      sumHours += item.netHours;
+      sumPay += item.pay;
+
+      tbody.innerHTML += `
+        <tr>
+          <td>${item.date}</td>
+          <td>${item.netHours.toFixed(2)}h</td>
+          <td>€${item.pay.toFixed(2)}</td>
+          <td><button class="btn-del" onclick="deleteEntry(${index})">X</button></td>
+        </tr>
+      `;
+    });
+
+    document.getElementById('totalHours').innerText = sumHours.toFixed(2) + ' hrs';
+    document.getElementById('totalPay').innerText = '€' + sumPay.toFixed(2);
+  }
+
+  function addEntry() {
+    const date = document.getElementById('workDate').value;
+    const sh = parseInt(document.getElementById('startHour').value);
+    const sm = parseInt(document.getElementById('startMin').value);
+    const eh = parseInt(document.getElementById('endHour').value);
+    const em = parseInt(document.getElementById('endMin').value);
+    const breakMins = parseInt(document.getElementById('breakMins').value);
+
+    let start = new Date(2000, 0, 1, sh, sm);
+    let end = new Date(2000, 0, 1, eh, em);
+    if (end <= start) end.setDate(end.getDate() + 1);
+
+    let diffMins = (end - start) / (1000 * 60) - breakMins;
+    if (diffMins < 0) diffMins = 0;
+
+    let netHours = diffMins / 60;
+    
+    let baseRate = 9.0;
+    let pay = 0;
+    if (netHours > 8) {
+      pay = (8 * baseRate) + ((netHours - 8) * (baseRate * 1.2));
+    } else {
+      pay = netHours * baseRate;
+    }
+
+    entries.push({ date, netHours, pay });
+    saveAndRender();
+  }
+
+  function deleteEntry(index) {
+    entries.splice(index, 1);
+    saveAndRender();
+  }
+
+  function exportToExcel() {
+    if(entries.length === 0) return alert('Δεν υπάρχουν δεδομένα!');
+    let csv = 'Ημερομηνία,Ώρες,Αμοιβή (€)\n';
+    entries.forEach(e => {
+      csv += `${e.date},${e.netHours.toFixed(2)},${e.pay.toFixed(2)}\n`;
+    });
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `ExtraHours_${new Date().toISOString().slice(0,10)}.csv`;
+    link.click();
+  }
+
+  function sendToHR() {
+    if(entries.length === 0) return alert('Δεν υπάρχουν δεδομένα!');
+    let totalH = entries.reduce((a,b) => a + b.netHours, 0).toFixed(2);
+    let totalP = entries.reduce((a,b) => a + b.pay, 0).toFixed(2);
+    let body = `Καλησπέρα,\n\nΣας αποστέλλω τις ώρες εργασίας μου:\nΣύνολο Ωρών: ${totalH}\nΣύνολο Αμοιβής: €${totalP}\n\nΕυχαριστώ.`;
+    window.location.href = `mailto:hr@company.com?subject=Ώρες Εργασίας&body=${encodeURIComponent(body)}`;
+  }
+
+  saveAndRender();
+</script>
+</body>
+</html>
