@@ -5,9 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Extrahoursmrk</title>
   
-  <!-- Χρησιμοποιούμε τη βιβλιοθήκη ExcelJS για σωστή μορφοποίηση στηλών -->
+  <!-- Χρησιμοποιούμε τη βιβλιοθήκη ExcelJS για σωστή μορφοποίηση στηλών και χρωμάτων -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js"></script>
-  <!-- Το FileSaver βοηθάει στο κατέβασμα του αρχείου σε όλα τα κινητά -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
   
   <style>
@@ -169,10 +168,10 @@
     {date: "2026-09-26", start: "10:00", end: "00:30"}
   ];
 
-  let stored = localStorage.getItem('extrahours_exact_data_v21');
+  let stored = localStorage.getItem('extrahours_exact_data_v22');
   let shifts = stored ? JSON.parse(stored) : defaultShifts;
   if (!stored) {
-    localStorage.setItem('extrahours_exact_data_v21', JSON.stringify(shifts));
+    localStorage.setItem('extrahours_exact_data_v22', JSON.stringify(shifts));
   }
 
   function getDayName(dateStr) {
@@ -308,7 +307,7 @@
     let processed = processAllShifts(shifts);
     let displayList = [...processed].sort((a, b) => new Date(b.date) - new Date(a.date));
 
-    localStorage.setItem('extrahours_exact_data_v21', JSON.stringify(shifts));
+    localStorage.setItem('extrahours_exact_data_v22', JSON.stringify(shifts));
     
     const tbody = document.getElementById('logsTable');
     tbody.innerHTML = '';
@@ -374,28 +373,62 @@
     }
   }
 
-  // Αλλαγμένη συνάρτηση εξαγωγής με τη βιβλιοθήκη ExcelJS
+  // Εξαγωγή Excel με τίτλο Μήνα, σωστά πλάτη στηλών και ωραία χρώματα
   async function exportExcelFile() {
     let processed = processAllShifts(shifts);
     if(processed.length === 0) return alert('Δεν υπάρχουν δεδομένα!');
 
+    let monthVal = document.getElementById('exportMonth').value;
+    let monthNames = {
+      "01": "Ιανουάριος", "02": "Φεβρουάριος", "03": "Μάρτιος", "04": "Απρίλιος",
+      "05": "Μάιος", "06": "Ιούνιος", "07": "Ιούλιος", "08": "Αύγουστος",
+      "09": "Σεπτέμβριος", "10": "Οκτώβριος", "11": "Νοέμβριος", "12": "Δεκέμβριος"
+    };
+    let [year, mNum] = monthVal.split('-');
+    let monthTitle = (monthNames[mNum] || mNum) + " " + year;
+
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet('Βάρδιες');
 
-    // Ορίζουμε τις στήλες και το πλάτος τους για να μην κόβονται τα γράμματα
-    worksheet.columns = [
-      { header: 'Ημερομηνία & Ημέρα', key: 'date', width: 25 },
-      { header: 'Έναρξη', key: 'start', width: 12 },
-      { header: 'Λήξη', key: 'end', width: 12 },
-      { header: 'Συνολικές Ώρες', key: 'totalHours', width: 18 },
-      { header: 'Ώρες Υπερωρίας', key: 'overtime', width: 18 },
-      { header: 'Ώρες Ανάπαυσης (<11h)', key: 'restHours', width: 22 },
-      { header: 'Ποσό Ανάπαυσης (€)', key: 'restPay', width: 20 },
-      { header: 'Συνολικό Ποσό', key: 'finalPay', width: 18 }
-    ];
+    // Γραμμή 1: Τίτλος Μήνα στην κορυφή
+    worksheet.addRow([`ΜΗΝΑΣ ΑΝΑΦΟΡΑΣ: ${monthTitle.toUpperCase()}`]);
+    worksheet.getRow(1).font = { bold: true, size: 14, color: { argb: 'FF004D40' } };
+    worksheet.addRow([]); // Κενή γραμμή
 
-    // Στιλιζάρισμα της γραμμής των επικεφαλίδων (Bold)
-    worksheet.getRow(1).font = { bold: true };
+    // Γραμμή 3: Επικεφαλίδες στηλών
+    const headerRow = worksheet.addRow([
+      'Ημερομηνία & Ημέρα', 
+      'Έναρξη', 
+      'Λήξη', 
+      'Συνολικές Ώρες', 
+      'Ώρες Υπερωρίας', 
+      'Ώρες Ανάπαυσης (<11h)', 
+      'Ποσό Ανάπαυσης (€)', 
+      'Συνολικό Ποσό'
+    ]);
+
+    // Στιλιζάρισμα επικεφαλίδων (Σκούρο φόντο, λευκά γράμματα, bold)
+    headerRow.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+    headerRow.eachCell((cell) => {
+      cell.fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: 'FF263238' } // Σκούρο γκρι/μπλε
+      };
+      cell.alignment = { vertical: 'middle', horizontal: 'center' };
+    });
+
+    // Ορισμός πλάτους στηλών για να μην κόβεται τίποτα
+    worksheet.columns = [
+      { key: 'date', width: 26 },
+      { key: 'start', width: 12 },
+      { key: 'end', width: 12 },
+      { key: 'totalHours', width: 16 },
+      { key: 'overtime', width: 16 },
+      { key: 'restHours', width: 22 },
+      { key: 'restPay', width: 20 },
+      { key: 'finalPay', width: 18 }
+    ];
 
     let totalHoursSum = 0;
     let totalOvertimeHoursSum = 0;
@@ -411,43 +444,57 @@
       totalPaySum += Number(item.finalAmt);
       
       let dateWithDay = `${item.date} (${item.dayName})`;
-      worksheet.addRow({
-        date: dateWithDay,
-        start: item.start,
-        end: item.end,
-        totalHours: Number(item.hours.toFixed(2)),
-        overtime: Number(item.overtimeHours.toFixed(2)),
-        restHours: Number(item.restHoursDeficit.toFixed(2)),
-        restPay: Number(item.extraRestPay.toFixed(2)),
-        finalPay: Number(item.finalAmt.toFixed(2))
-      });
+      let row = worksheet.addRow([
+        dateWithDay,
+        item.start,
+        item.end,
+        Number(item.hours.toFixed(2)),
+        Number(item.overtimeHours.toFixed(2)),
+        Number(item.restHoursDeficit.toFixed(2)),
+        Number(item.extraRestPay.toFixed(2)),
+        Number(item.finalAmt.toFixed(2))
+      ]);
+
+      // Αν είναι Σαββατοκύριακο, βάλε του ένα απαλό ροζ/κόκκινο φόντο για να ξεχωρίζει
+      if (item.isWeekend) {
+        row.eachCell((cell) => {
+          cell.fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: 'FFFFEBEE' } // Απαλό κόκκινο/ροζ για Σαβ/Κυρ
+          };
+          cell.font = { bold: true, color: { argb: 'FF9C0006' } };
+        });
+      }
     });
 
-    // Προσθήκη κενής γραμμής και της γραμμής των συνόλων
+    // Κενή γραμμή και γραμμή Συνόλων
     worksheet.addRow({});
-    const totalsRow = worksheet.addRow({
-      date: 'ΣΥΝΟΛΑ:',
-      totalHours: Number(totalHoursSum.toFixed(2)),
-      overtime: Number(totalOvertimeHoursSum.toFixed(2)),
-      restHours: Number(totalRestHoursSum.toFixed(2)),
-      restPay: Number(totalRestPaySum.toFixed(2)),
-      finalPay: Number(totalPaySum.toFixed(2))
+    const totalsRow = worksheet.addRow([
+      'ΣΥΝΟΛΑ:',
+      '',
+      '',
+      Number(totalHoursSum.toFixed(2)),
+      Number(totalOvertimeHoursSum.toFixed(2)),
+      Number(totalRestHoursSum.toFixed(2)),
+      Number(totalRestPaySum.toFixed(2)),
+      Number(totalPaySum.toFixed(2))
+    ]);
+
+    // Στιλιζάρισμα γραμμής συνόλων
+    totalsRow.font = { bold: true, size: 11 };
+    totalsRow.eachCell((cell) => {
+      cell.fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: 'FFECEFF1' } // Απαλό γκρι φόντο στα σύνολα
+      };
     });
-    totalsRow.font = { bold: true };
 
-    let monthVal = document.getElementById('exportMonth').value;
-    let monthNames = {
-      "01": "Ιανουάριος", "02": "Φεβρουάριος", "03": "Μάρτιος", "04": "Απρίλιος",
-      "05": "Μάιος", "06": "Ιούνιος", "07": "Ιούλιος", "08": "Αύγουστος",
-      "09": "Σεπτέμβριος", "10": "Οκτώβριος", "11": "Νοέμβριος", "12": "Δεκέμβριος"
-    };
-    let [year, mNum] = monthVal.split('-');
-    let monthTitle = (monthNames[mNum] || mNum) + "_" + year;
-
-    // Δημιουργία και κατέβασμα του αρχείου
+    let monthFilename = (monthNames[mNum] || mNum) + "_" + year;
     const buffer = await workbook.xlsx.writeBuffer();
     const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-    saveAs(blob, `ExtraHours_${monthTitle}.xlsx`);
+    saveAs(blob, `ExtraHours_${monthFilename}.xlsx`);
   }
 
   function syncGoogleSheets() {
