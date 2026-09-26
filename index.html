@@ -60,7 +60,6 @@
       display: inline-block;
       margin-top: 4px;
     }
-    /* Κρυφή φόρμα αρχικά */
     #formCard { display: none; }
   </style>
 </head>
@@ -68,10 +67,10 @@
 
   <h1>Extrahoursmrk</h1>
 
-  <!-- ΚΟΥΜΠΙ ΓΙΑ ΝΑ ΑΝΟΙΞΕΙ ΤΟ ΜΕΝΟΥ ΚΑΤΑΧΩΡΗΣΗΣ -->
+  <!-- ΚΟΥΜΠΙ ΑΝΟΙΓΜΑΤΟΣ ΜΕΝΟΥ -->
   <button class="btn-open" onclick="openForm()">➕ Νέα Καταχώρηση</button>
 
-  <!-- ΦΟΡΜΑ (ΑΝΟΙΓΕΙ ΜΟΝΟ OTAN ΠΑΤΑΣ ΝΕΑ ΚΑΤΑΧΩΡΗΣΗ) -->
+  <!-- ΦΟΡΜΑ (ΑΝΟΙΓΕΙ ΜΟΝΟ ΠΑΤΩΝΤΑΣ ΤΟ ΚΟΥΜΠΙ) -->
   <div class="card" id="formCard">
     <h3 style="margin-top:0; color:#00e676;">Καταχώρηση Βάρδιας</h3>
     
@@ -134,7 +133,27 @@
 
 <script>
   document.getElementById('workDate').value = new Date().toISOString().substring(0, 10);
-  let entries = JSON.parse(localStorage.getItem('extrahours_db')) || [];
+
+  // Αρχικά δεδομένα από το Excel αν δεν υπάρχουν ήδη αποθηκευμένα
+  const excelData = [
+    { date: "2026-09-01", startISO: "2026-09-01T09:15:00", endISO: "2026-09-01T20:30:00", netHours: 11.25, pay: 107.10 },
+    { date: "2026-09-02", startISO: "2026-09-02T09:30:00", endISO: "2026-09-03T01:30:00", netHours: 16.00, pay: 158.40 },
+    { date: "2026-09-03", startISO: "2026-09-03T09:30:00", endISO: "2026-09-04T00:30:00", netHours: 15.00, pay: 147.60 },
+    { date: "2026-09-04", startISO: "2026-09-04T09:30:00", endISO: "2026-09-05T01:30:00", netHours: 16.00, pay: 158.40 },
+    { date: "2026-09-14", startISO: "2026-09-14T10:00:00", endISO: "2026-09-14T18:00:00", netHours: 8.00, pay: 72.00 },
+    { date: "2026-09-15", startISO: "2026-09-15T10:00:00", endISO: "2026-09-15T18:00:00", netHours: 8.00, pay: 72.00 },
+    { date: "2026-09-16", startISO: "2026-09-16T09:00:00", endISO: "2026-09-16T18:30:00", netHours: 9.50, pay: 88.20 },
+    { date: "2026-09-17", startISO: "2026-09-17T09:00:00", endISO: "2026-09-18T01:00:00", netHours: 16.00, pay: 158.40 },
+    { date: "2026-09-18", startISO: "2026-09-18T08:00:00", endISO: "2026-09-18T18:00:00", netHours: 10.00, pay: 93.60 },
+    { date: "2026-09-21", startISO: "2026-09-21T09:00:00", endISO: "2026-09-21T18:30:00", netHours: 9.50, pay: 88.20 },
+    { date: "2026-09-22", startISO: "2026-09-22T09:00:00", endISO: "2026-09-22T23:30:00", netHours: 14.50, pay: 142.20 },
+    { date: "2026-09-23", startISO: "2026-09-23T09:30:00", endISO: "2026-09-24T00:30:00", netHours: 15.00, pay: 147.60 },
+    { date: "2026-09-24", startISO: "2026-09-24T09:00:00", endISO: "2026-09-25T00:00:00", netHours: 15.00, pay: 147.60 },
+    { date: "2026-09-25", startISO: "2026-09-25T10:00:00", endISO: "2026-09-25T23:45:00", netHours: 13.75, pay: 134.10 }
+  ];
+
+  let storedData = localStorage.getItem('extrahours_db');
+  let entries = storedData ? JSON.parse(storedData) : excelData;
 
   function openForm() {
     document.getElementById('formCard').style.display = 'block';
@@ -213,8 +232,6 @@
 
     entries.push({ date, startISO, endISO, netHours, pay });
     saveAndRender();
-
-    // Κλείσιμο μενού μετά την αποθήκευση
     closeForm();
   }
 
