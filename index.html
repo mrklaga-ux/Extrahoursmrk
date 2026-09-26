@@ -188,9 +188,18 @@
   document.getElementById('workDate').value = todayStr;
   document.getElementById('exportMonth').value = todayStr.substring(0, 7);
 
-  // ΕΠΑΝΑΦΟΡΑ ΤΟΥ ΣΩΣΤΟΥ ΚΛΕΙΔΙΟΥ ΓΙΑ ΝΑ ΦΑΝΟΥΝ ΤΑ ΠΑΛΙΑ ΔΕΔΟΜΕΝΑ
-  let stored = localStorage.getItem('extrahours_v10');
-  let shifts = stored ? JSON.parse(stored) : [];
+  // ΦΟΡΤΩΣΗ ΑΠΟ LOCALSTORAGE Ή ΑΠΟ ΤΑ ΕΝΣΩΜΑΤΩΜΕΝΑ ΔΕΔΟΜΕΝΑ ΑΣΦΑΛΕΙΑΣ
+  let defaultShifts = [
+    { date: "2026-09-01", startISO: "2026-09-01T08:00:00.000Z", endISO: "2026-09-01T16:00:00.000Z", breakMins: 0, isHoliday: false },
+    { date: "2026-09-02", startISO: "2026-09-02T08:00:00.000Z", endISO: "2026-09-02T16:00:00.000Z", breakMins: 0, isHoliday: false },
+    { date: "2026-09-03", startISO: "2026-09-03T08:00:00.000Z", endISO: "2026-09-03T16:00:00.000Z", breakMins: 0, isHoliday: false },
+    { date: "2026-09-04", startISO: "2026-09-04T08:00:00.000Z", endISO: "2026-09-04T16:00:00.000Z", breakMins: 0, isHoliday: false },
+    { date: "2026-09-07", startISO: "2026-09-07T08:00:00.000Z", endISO: "2026-09-07T16:00:00.000Z", breakMins: 0, isHoliday: false },
+    { date: "2026-09-08", startISO: "2026-09-08T08:00:00.000Z", endISO: "2026-09-08T16:00:00.000Z", breakMins: 0, isHoliday: false }
+  ];
+
+  let stored = localStorage.getItem('extrahours_safe_v1');
+  let shifts = stored ? JSON.parse(stored) : defaultShifts;
 
   function toggleExportMode() {
     const mode = document.getElementById('exportMode').value;
@@ -231,8 +240,7 @@
 
   function saveAndRender() {
     shifts.sort((a, b) => new Date(a.startISO) - new Date(b.startISO));
-    // ΧΡΗΣΗ ΤΟΥ ΙΔΙΟΥ ΚΛΕΙΔΙΟΥ ΓΙΑ ΤΗΝ ΑΣΦΑΛΗ ΑΠΟΘΗΚΕΥΣΗ
-    localStorage.setItem('extrahours_v10', JSON.stringify(shifts));
+    localStorage.setItem('extrahours_safe_v1', JSON.stringify(shifts));
     
     const tbody = document.getElementById('logsTable');
     tbody.innerHTML = '';
