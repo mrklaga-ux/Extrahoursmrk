@@ -131,7 +131,7 @@
   </div>
 
   <div class="card">
-    <h3 style="margin-top:0;">Ιστορικό Βαρδιών <span style="font-size:0.75rem; color:#aaa; font-weight:normal;">(Υπερωρίες >8h & Ανάπαυση <11h)</span></h3>
+    <h3 style="margin-top:0;">Ιστορικό Βαρδιών</h3>
     <table>
       <thead>
         <tr>
@@ -159,13 +159,14 @@
     {date: "2026-09-22", start: "09:00", end: "23:30"},
     {date: "2026-09-23", start: "09:30", end: "00:30"},
     {date: "2026-09-24", start: "09:00", end: "00:00"},
-    {date: "2026-09-25", start: "10:00", end: "23:45"}
+    {date: "2026-09-25", start: "10:00", end: "23:45"},
+    {date: "2026-09-26", start: "10:00", end: "00:30"}
   ];
 
-  let stored = localStorage.getItem('extrahours_exact_data_v11');
+  let stored = localStorage.getItem('extrahours_exact_data_v14');
   let shifts = stored ? JSON.parse(stored) : defaultShifts;
   if (!stored) {
-    localStorage.setItem('extrahours_exact_data_v11', JSON.stringify(shifts));
+    localStorage.setItem('extrahours_exact_data_v14', JSON.stringify(shifts));
   }
 
   function isWeekend(dateStr) {
@@ -192,11 +193,17 @@
     let results = sorted.map((item, idx) => {
       let hours = calculateShiftHours(item.start, item.end);
       let weekend = isWeekend(item.date);
-      let rate = weekend ? 18.0 : 9.0;
-
-      // ΥΠΟΛΟΓΙΣΜΟΣ ΜΟΝΟ ΤΩΝ ΩΡΩΝ ΥΠΕΡΩΡΙΑΣ (>8h)
+      
+      let baseAmount = 0;
       let overtimeHours = Math.max(0, hours - 8);
-      let baseAmount = overtimeHours * rate;
+
+      if (weekend) {
+        // Σαββατοκύριακο: ΟΛΕΣ οι ώρες της βάρδιας πληρώνονται με 18€
+        baseAmount = hours * 18.0;
+      } else {
+        // Καθημερινή: Μόνο οι υπερωρίες (>8h) πληρώνονται με 9€
+        baseAmount = overtimeHours * 9.0;
+      }
 
       let extraRestPay = 0;
       let restHoursDeficit = 0;
@@ -220,7 +227,9 @@
 
           if (restHours < 11) {
             restHoursDeficit = 11 - restHours;
-            extraRestPay = restHoursDeficit * 9.0; // 9€ extra για τις ώρες ανάπαυσης που λείπουν
+            // Αν η μέρα είναι Σαββατοκύριακο, η ανάπαυση υπολογίζεται με 18€, αλλιώς με 9€
+            let restRate = weekend ? 18.0 : 9.0;
+            extraRestPay = restHoursDeficit * restRate; 
           }
         }
       }
@@ -246,9 +255,8 @@
     let end = document.getElementById('endTime').value;
     let hours = calculateShiftHours(start, end);
     let weekend = isWeekend(dateStr);
-    let rate = weekend ? 18.0 : 9.0;
-    let overtimeHours = Math.max(0, hours - 8);
-    let amt = overtimeHours * rate;
+    
+    let amt = weekend ? (hours * 18.0) : (Math.max(0, hours - 8) * 9.0);
     
     document.getElementById('totalShiftHours').value = hours.toFixed(2);
     document.getElementById('finalAmount').value = amt.toFixed(2);
@@ -290,7 +298,7 @@
     let processed = processAllShifts(shifts);
     let displayList = [...processed].sort((a, b) => new Date(b.date) - new Date(a.date));
 
-    localStorage.setItem('extrahours_exact_data_v11', JSON.stringify(shifts));
+    localStorage.setItem('extrahours_exact_data_v14', JSON.stringify(shifts));
     
     const tbody = document.getElementById('logsTable');
     tbody.innerHTML = '';
@@ -308,7 +316,7 @@
 
       tbody.innerHTML += `
         <tr class="clickable-row" onclick="openForm(${origIndex})">
-          <td><b>${item.date}</b>${weekendLabel}${extraTag}<br><span style="color:#aaa; font-size:0.8rem;">🕒 ${item.start} - ${item.end} (Υπερωρία: ${item.overtimeHours.toFixed(2)}h)</span></td>
+          <td><b>${item.date}</b>${weekendLabel}${extraTag}<br><span style="color:#aaa; font-size:0.8rem;">🕒 ${item.start} - ${item.end}</span></td>
           <td>Ώρες: <b>${Number(item.hours).toFixed(2)}h</b></td>
           <td><b>€${Number(item.finalAmt).toFixed(2)}</b></td>
         </tr>`;
@@ -360,18 +368,18 @@
     let processed = processAllShifts(shifts);
     if(processed.length === 0) return alert('Δεν υπάρχουν δεδομένα!');
 
-    let csv = '\uFEFFΗμερομηνία;Έναρξη;Λήξη;Συνολικές Ώρες;Υπερωρία (>8h);Έξτρα Ανάπαυσης (€);Τελικό Έξτρα Ποσό\n';
+    let csv = '\uFEFFΗμερομηνία;Έναρξη;Λήξη;Συνολικές Ώρες;Έξτρα Ποσό\n';
     let totalHoursSum = 0;
     let totalPaySum = 0;
 
     processed.forEach(item => {
       totalHoursSum += Number(item.hours);
       totalPaySum += Number(item.finalAmt);
-      csv += `${item.date};${item.start};${item.end};${item.hours.toFixed(2)};${item.overtimeHours.toFixed(2)};${item.extraRestPay.toFixed(2)};${item.finalAmt.toFixed(2)}\n`;
+      csv += `${item.date};${item.start};${item.end};${item.hours.toFixed(2)};${item.finalAmt.toFixed(2)}\n`;
     });
 
-    csv += `\n; ;ΣΥΝΟΛΟ ΩΡΩΝ:;${totalHoursSum.toFixed(2)}; ; \n`;
-    csv += `; ;ΣΥΝΟΛΟ ΕΞΤΡΑ ΠΟΣΟΥ:; ; ;${totalPaySum.toFixed(2)}\n`;
+    csv += `\n; ;ΣΥΝΟΛΟ ΩΡΩΝ:;${totalHoursSum.toFixed(2)}; \n`;
+    csv += `; ;ΣΥΝΟΛΟ ΠΟΣΟΥ:; ;${totalPaySum.toFixed(2)}\n`;
 
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
