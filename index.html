@@ -137,7 +137,7 @@
 
   <div class="card">
     <div class="val-box">
-      <label>Σύνολο Έξτρα Ωρών (Υπερωρίες + Έλλειμμα)</label>
+      <label>Σύνολο Έξτρα Ωρών (Υπερωρίες + Έλλειμμα Ανάπαυσης)</label>
       <div class="val" id="totalHours">0.00 hrs</div>
     </div>
     <div class="val-box">
@@ -199,7 +199,7 @@
     { date: "2026-09-25", startISO: "2026-09-25T10:00:00", endISO: "2026-09-25T23:45:00", breakMins: 0, isHoliday: false }
   ];
 
-  let stored = localStorage.getItem('extrahours_v12');
+  let stored = localStorage.getItem('extrahours_v13');
   let shifts = stored ? JSON.parse(stored) : [...excelDefaultShifts];
 
   function toggleExportMode() {
@@ -241,7 +241,7 @@
 
   function saveAndRender() {
     shifts.sort((a, b) => new Date(a.startISO) - new Date(b.startISO));
-    localStorage.setItem('extrahours_v12', JSON.stringify(shifts));
+    localStorage.setItem('extrahours_v13', JSON.stringify(shifts));
     
     const tbody = document.getElementById('logsTable');
     tbody.innerHTML = '';
@@ -266,19 +266,20 @@
 
       let diffMins = (end - start) / (1000 * 60) - (item.breakMins || 0);
       let totalHours = diffMins > 0 ? diffMins / 60 : 0;
-
       let otHours = totalHours > 8 ? (totalHours - 8) : 0;
+
+      let restHoursVal = 24.00; // Προεπιλογή αν δεν υπάρχει προηγούμενη
       let restDeficit = 0;
       let restWarning = '';
 
       if (index > 0 && shifts[index - 1].endISO) {
         let prevEnd = new Date(shifts[index - 1].endISO);
         let restMins = (start - prevEnd) / (1000 * 60);
-        let restHours = restMins / 60;
+        restHoursVal = restMins / 60;
 
-        if (restHours < 11 && restHours >= 0) {
-          restDeficit = 11 - restHours;
-          restWarning = `<br><span class="warn-badge">⚠️ Ανάπαυση ${restHours.toFixed(2)}h (&lt;11h)</span>`;
+        if (restHoursVal < 11 && restHoursVal >= 0) {
+          restDeficit = 11 - restHoursVal;
+          restWarning = `<br><span class="warn-badge">⚠️ Ανάπαυση ${restHoursVal.toFixed(2)}h (&lt;11h)</span>`;
         }
       }
 
@@ -365,8 +366,8 @@
     const mode = document.getElementById('exportMode').value;
     const selectedMonth = document.getElementById('exportMonth').value;
 
-    // Πλήρως αναλυτικές στήλες χωρισμένες με ερωτηματικό (;) για αυτόματο άνοιγμα στο Excel
-    let csv = '\uFEFFΗμερομηνία;Έναρξη;Λήξη;Ώρες Βάρδιας;Υπερωρία (>8h);Έλλειψη Ανάπαυσης;Έξτρα Ώρες;Rate (€);Ποσό (€)\n';
+    // Πλήρως αναλυτικές στήλες CSV χωρισμένες με ερωτηματικό (;) συμπεριλαμβανομένης της ανάπαυσης
+    let csv = '\uFEFFΗμερομηνία;Έναρξη;Λήξη;Συνολικές Ώρες Βάρδιας;Ώρες Ανάπαυσης από Προηγούμενη;Υπερωρία (>8h);Έλλειψη Ανάπαυσης (<11h);Συνολικές Έξτρα Ώρες;Ωρομίσθιο (€);Συνολικό Ποσό (€)\n';
     let count = 0;
 
     shifts.forEach((item, index) => {
@@ -380,6 +381,7 @@
       let end = item.endISO ? new Date(item.endISO) : null;
       
       let totalHours = 0;
+      let restHoursVal = 24.00;
       let otHours = 0;
       let restDeficit = 0;
       let rowExtraHours = 0;
@@ -394,9 +396,9 @@
         if (index > 0 && shifts[index - 1].endISO) {
           let prevEnd = new Date(shifts[index - 1].endISO);
           let restMins = (start - prevEnd) / (1000 * 60);
-          let restHours = restMins / 60;
-          if (restHours < 11 && restHours >= 0) {
-            restDeficit = 11 - restHours;
+          restHoursVal = restMins / 60;
+          if (restHoursVal < 11 && restHoursVal >= 0) {
+            restDeficit = 11 - restHoursVal;
           }
         }
 
@@ -408,7 +410,7 @@
         rowPay = rowExtraHours * rate;
       }
 
-      csv += `"${item.date}";"${startTimeStr}";"${endTimeStr}";"${totalHours.toFixed(2)}";"${otHours.toFixed(2)}";"${restDeficit.toFixed(2)}";"${rowExtraHours.toFixed(2)}";"${rate.toFixed(2)}";"${rowPay.toFixed(2)}"\n`;
+      csv += `"${item.date}";"${startTimeStr}";"${endTimeStr}";"${totalHours.toFixed(2)}";"${restHoursVal.toFixed(2)}";"${otHours.toFixed(2)}";"${restDeficit.toFixed(2)}";"${rowExtraHours.toFixed(2)}";"${rate.toFixed(2)}";"${rowPay.toFixed(2)}"\n`;
       count++;
     });
 
@@ -419,7 +421,7 @@
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
-    link.download = `ExtraHours_Analytic_${mode === 'month' ? selectedMonth : 'All'}_${new Date().toISOString().slice(0,10)}.csv`;
+    link.download = `ExtraHours_FullAnalytic_${mode === 'month' ? selectedMonth : 'All'}_${new Date().toISOString().slice(0,10)}.csv`;
     link.click();
   }
 
