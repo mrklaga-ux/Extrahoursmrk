@@ -67,10 +67,7 @@
     tr.clickable-row:active, tr.clickable-row:hover {
       background-color: #2c2c2c;
     }
-    .badge-red {
-      color: #ff5252;
-      font-weight: bold;
-    }
+    .badge-red { color: #ff5252; font-weight: bold; }
     #formCard, #settingsCard { display: none; }
   </style>
 </head>
@@ -103,22 +100,10 @@
     <label>Ώρα Λήξης</label>
     <input type="time" id="endTime" value="18:00" onchange="livePreview()">
 
-    <label>Διάλειμμα (ώρες)</label>
-    <select id="breakHours" onchange="livePreview()">
-      <option value="0">Χωρίς διάλειμμα (0h)</option>
-      <option value="0.5">30 λεπτά (0.5h)</option>
-      <option value="1" selected>1 ώρα (1.0h)</option>
-      <option value="1.5">1.5 ώρα (1.5h)</option>
-      <option value="2">2 ώρες (2.0h)</option>
-    </select>
+    <label>Συνολικές Ώρες Βάρδιας</label>
+    <input type="number" step="0.25" id="totalShiftHours" value="8.00" readonly>
 
-    <label>Καθαρές Ώρες Εργασίας</label>
-    <input type="number" step="0.25" id="totalShiftHours" value="7.00" readonly>
-
-    <label>Ωρομίσθιο (Καθημερινή: 9€ / Σαβ/κο: 18€)</label>
-    <input type="number" step="0.25" id="miscHours" value="9.00" readonly>
-
-    <label>Τελικό Ποσό / Σύνολο (€)</label>
+    <label>Βασικό Ποσό (€)</label>
     <input type="number" step="0.01" id="finalAmount" value="0.00" readonly>
 
     <button class="btn-save" onclick="saveEntry()">💾 Αποθήκευση</button>
@@ -146,7 +131,7 @@
   </div>
 
   <div class="card">
-    <h3 style="margin-top:0;">Ιστορικό Βαρδιών <span style="font-size:0.75rem; color:#aaa; font-weight:normal;">(>11 ώρες με κόκκινη ένδειξη)</span></h3>
+    <h3 style="margin-top:0;">Ιστορικό Βαρδιών <span style="font-size:0.75rem; color:#aaa; font-weight:normal;">(Με έλεγχο 11ωρης ανάπαυσης)</span></h3>
     <table>
       <thead>
         <tr>
@@ -160,78 +145,111 @@
   </div>
 
 <script>
+  // Οι ακριβείς δικές σου βάρδιες Σεπτεμβρίου
   let defaultShifts = [
-    {date: "2026-09-01", start: "09:15", end: "20:30", breakH: 1.0},
-    {date: "2026-09-02", start: "09:30", end: "01:30", breakH: 1.0},
-    {date: "2026-09-03", start: "09:30", end: "00:30", breakH: 1.0},
-    {date: "2026-09-04", start: "09:30", end: "01:30", breakH: 1.0},
-    {date: "2026-09-14", start: "10:00", end: "18:00", breakH: 1.0},
-    {date: "2026-09-15", start: "10:00", end: "18:00", breakH: 1.0},
-    {date: "2026-09-16", start: "09:00", end: "18:30", breakH: 1.0},
-    {date: "2026-09-17", start: "09:00", end: "01:00", breakH: 1.0},
-    {date: "2026-09-18", start: "08:00", end: "18:00", breakH: 1.0},
-    {date: "2026-09-21", start: "09:00", end: "18:30", breakH: 1.0},
-    {date: "2026-09-22", start: "09:00", end: "23:30", breakH: 1.0},
-    {date: "2026-09-23", start: "09:30", end: "00:30", breakH: 1.0},
-    {date: "2026-09-24", start: "09:00", end: "00:00", breakH: 1.0},
-    {date: "2026-09-25", start: "10:00", end: "23:45", breakH: 1.0}
+    {date: "2026-09-01", start: "09:15", end: "20:30"},
+    {date: "2026-09-02", start: "09:30", end: "01:30"},
+    {date: "2026-09-03", start: "09:30", end: "00:30"},
+    {date: "2026-09-04", start: "09:30", end: "01:30"},
+    {date: "2026-09-14", start: "10:00", end: "18:00"},
+    {date: "2026-09-15", start: "10:00", end: "18:00"},
+    {date: "2026-09-16", start: "09:00", end: "18:30"},
+    {date: "2026-09-17", start: "09:00", end: "01:00"},
+    {date: "2026-09-18", start: "08:00", end: "18:00"},
+    {date: "2026-09-21", start: "09:00", end: "18:30"},
+    {date: "2026-09-22", start: "09:00", end: "23:30"},
+    {date: "2026-09-23", start: "09:30", end: "00:30"},
+    {date: "2026-09-24", start: "09:00", end: "00:00"},
+    {date: "2026-09-25", start: "10:00", end: "23:45"}
   ];
 
-  function processShifts(arr) {
-    return arr.map(item => {
-      let b = item.breakH !== undefined ? item.breakH : 1.0;
-      let calc = calculateValues(item.date, item.start, item.end, b);
-      return {
-        date: item.date,
-        start: item.start,
-        end: item.end,
-        breakH: b,
-        hours: calc.hours,
-        rate: calc.rate,
-        finalAmt: calc.finalAmt
-      };
-    });
-  }
-
-  let stored = localStorage.getItem('extrahours_exact_data_v8');
-  let shifts = stored ? JSON.parse(stored) : processShifts(defaultShifts);
+  let stored = localStorage.getItem('extrahours_exact_data_v9');
+  let shifts = stored ? JSON.parse(stored) : defaultShifts;
   if (!stored) {
-    localStorage.setItem('extrahours_exact_data_v8', JSON.stringify(shifts));
+    localStorage.setItem('extrahours_exact_data_v9', JSON.stringify(shifts));
   }
 
   function isWeekend(dateStr) {
-    if (!dateStr) return false;
     let d = new Date(dateStr);
     let day = d.getDay();
-    return (day === 0 || day === 6);
+    return (day === 0 || day === 6); // Σάββατο ή Κυριακή
   }
 
-  function calculateValues(dateStr, start, end, breakH) {
-    let hours = 0;
-    if (start && end) {
-      let [sh, sm] = start.split(':').map(Number);
-      let [eh, em] = end.split(':').map(Number);
-      let startMin = sh * 60 + sm;
-      let endMin = eh * 60 + em;
-      if (endMin < startMin) endMin += 24 * 60;
-      let totalSpan = (endMin - startMin) / 60;
-      hours = Math.max(0, totalSpan - breakH);
-    }
-    let rate = isWeekend(dateStr) ? 18.0 : 9.0;
-    let finalAmt = hours * rate;
-    return { hours, rate, finalAmt };
+  function timeToMinutes(timeStr) {
+    let [h, m] = timeStr.split(':').map(Number);
+    return h * 60 + m;
+  }
+
+  function calculateShiftHours(start, end) {
+    let sMin = timeToMinutes(start);
+    let eMin = timeToMinutes(end);
+    if (eMin < sMin) eMin += 24 * 60;
+    return (eMin - sMin) / 60;
+  }
+
+  // Υπολογισμός συνολικών ποσών με βάση τον κανόνα 11 ωρών ανάπαυσης και 18€ μόνο Σαβ/κο
+  function processAllShifts(arr) {
+    // Ταξινόμηση χρονολογικά (από παλαιότερη σε νεότερη) για να υπολογίζεται σωστά το κενό ανάμεσα στις μέρες
+    let sorted = [...arr].sort((a, b) => new Date(a.date) - new Date(b.date));
+    
+    let results = sorted.map((item, idx) => {
+      let hours = calculateShiftHours(item.start, item.end);
+      let weekend = isWeekend(item.date);
+      let baseRate = weekend ? 18.0 : 9.0;
+      let baseAmount = hours * baseRate;
+
+      let extraRestPay = 0;
+      let restHoursDeficit = 0;
+
+      // Έλεγχος κενού ανάπαυσης από την προηγούμενη βάρδια
+      if (idx > 0) {
+        let prev = sorted[idx - 1];
+        // Υπολογισμός ημερομηνιών
+        let prevDateObj = new Date(prev.date);
+        let currDateObj = new Date(item.date);
+        let diffDays = Math.round((currDateObj - prevDateObj) / (1000 * 60 * 60 * 24));
+
+        if (diffDays === 1) { // Διαδοχικές μέρες
+          let prevEndMin = timeToMinutes(prev.end);
+          // αν η λήξης ήταν την επόμενη μέρα ξημερώματα (π.χ. 01:30)
+          let prevEndTimeAbsolute = prevEndMin;
+          if (timeToMinutes(prev.end) < timeToMinutes(prev.start)) {
+            prevEndTimeAbsolute += 24 * 60;
+          }
+          
+          let currStartAbsolute = timeToMinutes(item.start) + 24 * 60; // την επόμενη μέρα
+          let restHours = (currStartAbsolute - prevEndTimeAbsolute) / 60;
+
+          if (restHours < 11) {
+            restHoursDeficit = 11 - restHours;
+            extraRestPay = restHoursDeficit * 9.0; // 9€ extra για τις ώρες που λείπουν κάτω από 11h
+          }
+        }
+      }
+
+      let totalAmt = baseAmount + extraRestPay;
+      return {
+        ...item,
+        hours: hours,
+        baseRate: baseRate,
+        extraRestPay: extraRestPay,
+        restHoursDeficit: restHoursDeficit,
+        finalAmt: totalAmt
+      };
+    });
+
+    return results;
   }
 
   function livePreview() {
     let dateStr = document.getElementById('workDate').value;
     let start = document.getElementById('startTime').value;
     let end = document.getElementById('endTime').value;
-    let breakH = parseFloat(document.getElementById('breakHours').value) || 0;
-    let calc = calculateValues(dateStr, start, end, breakH);
-
-    document.getElementById('totalShiftHours').value = calc.hours.toFixed(2);
-    document.getElementById('miscHours').value = calc.rate.toFixed(2);
-    document.getElementById('finalAmount').value = calc.finalAmt.toFixed(2);
+    let hours = calculateShiftHours(start, end);
+    let rate = isWeekend(dateStr) ? 18.0 : 9.0;
+    
+    document.getElementById('totalShiftHours').value = hours.toFixed(2);
+    document.getElementById('finalAmount').value = (hours * rate).toFixed(2);
   }
 
   function toggleSettings() {
@@ -242,21 +260,23 @@
   function openForm(index = -1) {
     document.getElementById('editIndex').value = index;
     const deleteBtn = document.getElementById('deleteBtn');
+    
+    // Βρίσκουμε την πραγματική θέση στο array βασισμένοι στο τρέχον sorted
+    let processed = processAllShifts(shifts);
+
     if (index === -1) {
       document.getElementById('formTitle').innerText = 'Νέα Καταχώρηση Βάρδιας';
       let todayStr = new Date().toISOString().substring(0, 10);
       document.getElementById('workDate').value = todayStr;
       document.getElementById('startTime').value = '10:00';
       document.getElementById('endTime').value = '18:00';
-      document.getElementById('breakHours').value = '1.0';
       deleteBtn.style.display = 'none';
     } else {
       document.getElementById('formTitle').innerText = 'Επεξεργασία Βάρδιας';
-      let item = shifts[index];
+      let item = processed[index];
       document.getElementById('workDate').value = item.date;
       document.getElementById('startTime').value = item.start;
       document.getElementById('endTime').value = item.end;
-      document.getElementById('breakHours').value = item.breakH !== undefined ? item.breakH : 1.0;
       deleteBtn.style.display = 'block';
     }
     livePreview();
@@ -267,27 +287,31 @@
   function closeForm() { document.getElementById('formCard').style.display = 'none'; }
 
   function saveAndRender() {
-    shifts.sort((a, b) => new Date(b.date) - new Date(a.date));
-    localStorage.setItem('extrahours_exact_data_v8', JSON.stringify(shifts));
+    let processed = processAllShifts(shifts);
+    // Εμφάνιση: πιο πρόσφατη ημερομηνία ΠΡΩΤΗ (φθίνουσα ταξινόμηση για τη λίστα)
+    let displayList = [...processed].sort((a, b) => new Date(b.date) - new Date(a.date));
+
+    localStorage.setItem('extrahours_exact_data_v9', JSON.stringify(shifts));
     
     const tbody = document.getElementById('logsTable');
     tbody.innerHTML = '';
     let totalHoursSum = 0;
     let totalPaySum = 0;
 
-    shifts.forEach((item, index) => {
+    displayList.forEach((item) => {
       totalHoursSum += Number(item.hours);
       totalPaySum += Number(item.finalAmt);
 
-      let isOver11 = Number(item.hours) > 11;
-      let hoursStyle = isOver11 ? 'class="badge-red"' : '';
-      let redIndicator = isOver11 ? ' <span style="color:#ff5252; font-weight:bold;" title="Πάνω από 11 ώρες">⚠️</span>' : '';
-      let weekendBadge = item.rate === 18 ? ' <span style="color:#ffeb3b; font-size:0.75rem;">(Σαβ/κο 18€)</span>' : '';
+      let weekendLabel = item.baseRate === 18 ? ' <span style="color:#ffeb3b; font-size:0.75rem;">(Σαβ/κο 18€)</span>' : '';
+      let extraTag = item.extraRestPay > 0 ? ` <span class="badge-red" title="Ανάπαυση < 11h">⚠️ +${item.restHoursDeficit.toFixed(1)}h extra</span>` : '';
+
+      // Βρίσκουμε το original index για το κλικ επεξεργασίας
+      let origIndex = shifts.findIndex(s => s.date === item.date && s.start === item.start && s.end === item.end);
 
       tbody.innerHTML += `
-        <tr class="clickable-row" onclick="openForm(${index})">
-          <td><b>${item.date}</b>${weekendBadge}${redIndicator}<br><span style="color:#aaa; font-size:0.8rem;">🕒 ${item.start} - ${item.end} (Διαλ: ${item.breakH}h)</span></td>
-          <td>Ώρες: <b ${hoursStyle}>${Number(item.hours).toFixed(2)}h</b></td>
+        <tr class="clickable-row" onclick="openForm(${origIndex})">
+          <td><b>${item.date}</b>${weekendLabel}${extraTag}<br><span style="color:#aaa; font-size:0.8rem;">🕒 ${item.start} - ${item.end}</span></td>
+          <td>Ώρες: <b>${Number(item.hours).toFixed(2)}h</b></td>
           <td><b>€${Number(item.finalAmt).toFixed(2)}</b></td>
         </tr>`;
     });
@@ -301,26 +325,19 @@
     let dateStr = document.getElementById('workDate').value;
     let start = document.getElementById('startTime').value;
     let end = document.getElementById('endTime').value;
-    let breakH = parseFloat(document.getElementById('breakHours').value) || 0;
 
     if(!dateStr) return alert('Συμπλήρωσε ημερομηνία!');
 
-    let calc = calculateValues(dateStr, start, end, breakH);
+    const entry = { date: dateStr, start: start, end: end };
 
-    const entry = {
-      date: dateStr,
-      start: start,
-      end: end,
-      breakH: breakH,
-      hours: calc.hours,
-      rate: calc.rate,
-      finalAmt: calc.finalAmt
-    };
-
+    let processed = processAllShifts(shifts);
     if (editIndex === -1) {
       shifts.push(entry);
     } else {
-      shifts[editIndex] = entry;
+      let target = processed[editIndex];
+      let realIdx = shifts.findIndex(s => s.date === target.date && s.start === target.start && s.end === target.end);
+      if(realIdx !== -1) shifts[realIdx] = entry;
+      else shifts.push(entry);
     }
 
     saveAndRender();
@@ -329,9 +346,12 @@
 
   function deleteCurrentEntry() {
     const editIndex = parseInt(document.getElementById('editIndex').value);
+    let processed = processAllShifts(shifts);
     if (editIndex >= 0) {
       if (confirm('Σίγουρα θέλεις να διαγράψεις αυτή τη βάρδια;')) {
-        shifts.splice(editIndex, 1);
+        let target = processed[editIndex];
+        let realIdx = shifts.findIndex(s => s.date === target.date && s.start === target.start && s.end === target.end);
+        if(realIdx !== -1) shifts.splice(realIdx, 1);
         saveAndRender();
         closeForm();
       }
@@ -339,20 +359,21 @@
   }
 
   function exportCSV() {
-    if(shifts.length === 0) return alert('Δεν υπάρχουν δεδομένα!');
+    let processed = processAllShifts(shifts);
+    if(processed.length === 0) return alert('Δεν υπάρχουν δεδομένα!');
 
-    let csv = '\uFEFFΗμερομηνία;Έναρξη;Λήξη;Διάλειμμα;Καθαρές Ώρες;Ωρομίσθιο (€);Τελικό Ποσό\n';
+    let csv = '\uFEFFΗμερομηνία;Έναρξη;Λήξη;Ώρες;Ωρομίσθιο;Έξτρα Ανάπαυσης (€);Τελικό Ποσό\n';
     let totalHoursSum = 0;
     let totalPaySum = 0;
 
-    shifts.forEach(item => {
+    processed.forEach(item => {
       totalHoursSum += Number(item.hours);
       totalPaySum += Number(item.finalAmt);
-      csv += `${item.date};${item.start};${item.end};${item.breakH};${item.hours.toFixed(2)};${item.rate.toFixed(2)};${item.finalAmt.toFixed(2)}\n`;
+      csv += `${item.date};${item.start};${item.end};${item.hours.toFixed(2)};${item.baseRate.toFixed(2)};${item.extraRestPay.toFixed(2)};${item.finalAmt.toFixed(2)}\n`;
     });
 
-    csv += `\n; ; ;ΣΥΝΟΛΟ ΩΡΩΝ:;${totalHoursSum.toFixed(2)}; \n`;
-    csv += `; ; ;ΤΕΛΙΚΟ ΠΟΣΟ:; ;${totalPaySum.toFixed(2)}\n`;
+    csv += `\n; ;ΣΥΝΟΛΟ ΩΡΩΝ:;${totalHoursSum.toFixed(2)}; ; \n`;
+    csv += `; ;ΤΕΛΙΚΟ ΠΟΣΟ:; ; ;${totalPaySum.toFixed(2)}\n`;
 
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
