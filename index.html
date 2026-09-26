@@ -93,8 +93,10 @@
   <button class="btn-open" onclick="openForm()">➕ Νέα Καταχώρηση</button>
 
   <div class="card" id="formCard">
-    <h3 style="margin-top:0; color:#00e676;">Καταχώρηση Βάρδιας</h3>
+    <h3 id="formTitle" style="margin-top:0; color:#00e676;">Καταχώρηση Βάρδιας</h3>
     
+    <input type="hidden" id="editIndex" value="-1">
+
     <label>Ημερομηνία</label>
     <input type="date" id="workDate">
 
@@ -115,10 +117,10 @@
 
     <label class="checkbox-container">
       <input type="checkbox" id="isHoliday">
-      <span>🎉 Είναι Αργία (18€/ώρα)</span>
+      <span>🎉 Είναι Αργία / Σαββατοκύριακο (18€/ώρα)</span>
     </label>
 
-    <button class="btn-save" onclick="addEntry()">💾 Αποθήκευση</button>
+    <button class="btn-save" onclick="saveEntry()">💾 Αποθήκευση</button>
     <button class="btn-cancel" onclick="closeForm()">Ακύρωση</button>
   </div>
 
@@ -140,12 +142,12 @@
   </div>
 
   <div class="card">
-    <h3 style="margin-top:0;">Ιστορικό Βαρδιών <span style="font-size:0.75rem; color:#aaa; font-weight:normal;">(Πατήστε πάνω για διαγραφή)</span></h3>
+    <h3 style="margin-top:0;">Ιστορικό Βαρδιών <span style="font-size:0.75rem; color:#aaa; font-weight:normal;">(Πατήστε για επεξεργασία/διαγραφή)</span></h3>
     <table>
       <thead>
         <tr>
-          <th>Ημερ.</th>
-          <th>Έξτρα Ώρες</th>
+          <th>Ημερ. & Ώρες</th>
+          <th>Έξτρα</th>
           <th>Ποσό</th>
         </tr>
       </thead>
@@ -156,7 +158,6 @@
 <script>
   document.getElementById('workDate').value = new Date().toISOString().substring(0, 10);
 
-  // Δεδομένα από την εικόνα του Excel
   const excelDefaultShifts = [
     { date: "2026-09-01", startISO: "2026-09-01T09:15:00", endISO: "2026-09-01T20:30:00", breakMins: 0, isHoliday: false },
     { date: "2026-09-02", startISO: "2026-09-02T09:30:00", endISO: "2026-09-03T01:30:00", breakMins: 0, isHoliday: false },
@@ -174,15 +175,39 @@
     { date: "2026-09-25", startISO: "2026-09-25T10:00:00", endISO: "2026-09-25T23:45:00", breakMins: 0, isHoliday: false }
   ];
 
-  let stored = localStorage.getItem('extrahours_v7');
+  let stored = localStorage.getItem('extrahours_v8');
   let shifts = stored ? JSON.parse(stored) : [...excelDefaultShifts];
 
-  function openForm() { document.getElementById('formCard').style.display = 'block'; }
+  function openForm(index = -1) {
+    document.getElementById('editIndex').value = index;
+    if (index === -1) {
+      document.getElementById('formTitle').innerText = 'Καταχώρηση Βάρδιας';
+      document.getElementById('workDate').value = new Date().toISOString().substring(0, 10);
+      document.getElementById('startTime').value = '08:00';
+      document.getElementById('endTime').value = '16:00';
+      document.getElementById('breakMins').value = '0';
+      document.getElementById('isHoliday').checked = false;
+    } else {
+      let item = shifts[index];
+      document.getElementById('formTitle').innerText = 'Επεξεργασία Βάρδιας';
+      document.getElementById('workDate').value = item.date;
+      let sDate = new Date(item.startISO);
+      document.getElementById('startTime').value = sDate.toTimeString().substring(0, 5);
+      if (item.endISO) {
+        let eDate = new Date(item.endISO);
+        document.getElementById('endTime').value = eDate.toTimeString().substring(0, 5);
+      }
+      document.getElementById('breakMins').value = item.breakMins || 0;
+      document.getElementById('isHoliday').checked = !!item.isHoliday;
+    }
+    document.getElementById('formCard').style.display = 'block';
+  }
+
   function closeForm() { document.getElementById('formCard').style.display = 'none'; }
 
   function saveAndRender() {
     shifts.sort((a, b) => new Date(a.startISO) - new Date(b.startISO));
-    localStorage.setItem('extrahours_v7', JSON.stringify(shifts));
+    localStorage.setItem('extrahours_v8', JSON.stringify(shifts));
     
     const tbody = document.getElementById('logsTable');
     tbody.innerHTML = '';
@@ -191,17 +216,24 @@
 
     shifts.forEach((item, index) => {
       let start = new Date(item.startISO);
-      let end = item.endISO ? new Date(item.endISO) : null;
+      let startTimeStr = start.toTimeString().substring(0, 5);
+      let endTimeStr = item.endISO ? new Date(item.endISO).toTimeString().substring(0, 5) : 'Ανοιχτή';
 
-      if (!end) return; // Αν δεν υπάρχει λήξη ακόμα (π.χ. Σάββατο 26/09), προσπερνάμε τον υπολογισμό
+      let end = item.endISO ? new Date(item.endISO) : null;
+      if (!end) {
+        tbody.innerHTML += `
+          <tr class="clickable-row" onclick="openForm(${index})">
+            <td><b>${item.date}</b><br><span style="color:#aaa; font-size:0.8rem;">🕒 ${startTimeStr} - ${endTimeStr}</span></td>
+            <td>-</td>
+            <td>-</td>
+          </tr>`;
+        return;
+      }
 
       let diffMins = (end - start) / (1000 * 60) - (item.breakMins || 0);
       let totalHours = diffMins > 0 ? diffMins / 60 : 0;
 
-      // 1. Υπερωρίες (> 8 ώρες)
       let otHours = totalHours > 8 ? (totalHours - 8) : 0;
-
-      // 2. Έλλειμμα Ανάπαυσης (< 11 ώρες)
       let restDeficit = 0;
       let restWarning = '';
 
@@ -216,7 +248,6 @@
         }
       }
 
-      // Έλεγχος αν η μέρα είναι Σαββατοκύριακο (0 = Κυριακή, 6 = Σάββατο)
       let dayOfWeek = start.getDay();
       let isWeekend = (dayOfWeek === 0 || dayOfWeek === 6);
       let is18Rate = isWeekend || item.isHoliday;
@@ -236,8 +267,8 @@
       }
 
       tbody.innerHTML += `
-        <tr class="clickable-row" onclick="onRowClick(${index})">
-          <td>${item.date}${badge}${restWarning}</td>
+        <tr class="clickable-row" onclick="openForm(${index})">
+          <td><b>${item.date}</b>${badge}<br><span style="color:#aaa; font-size:0.8rem;">🕒 ${startTimeStr} - ${endTimeStr}</span>${restWarning}</td>
           <td>${rowExtraHours.toFixed(2)}h</td>
           <td>€${rowPay.toFixed(2)} <span style="font-size:0.7rem; color:#888;">(${rate}€/h)</span></td>
         </tr>`;
@@ -247,16 +278,8 @@
     document.getElementById('totalPay').innerText = '€' + grandTotalPay.toFixed(2);
   }
 
-  function onRowClick(index) {
-    let item = shifts[index];
-    let confirmDel = confirm(`Θέλετε να διαγράψετε τη βάρδια στις ${item.date};`);
-    if (confirmDel) {
-      shifts.splice(index, 1);
-      saveAndRender();
-    }
-  }
-
-  function addEntry() {
+  function saveEntry() {
+    const editIndex = parseInt(document.getElementById('editIndex').value);
     const date = document.getElementById('workDate').value;
     const start = document.getElementById('startTime').value;
     const end = document.getElementById('endTime').value;
@@ -266,7 +289,6 @@
     if(!date || !start || !end) return alert('Συμπλήρωσε όλα τα πεδία');
 
     let startISO = new Date(`${date}T${start}`).toISOString();
-    if (shifts.some(e => e.startISO === startISO)) return alert('Η βάρδια υπάρχει ήδη!');
 
     let [sH, sM] = start.split(':').map(Number);
     let [eH, eM] = end.split(':').map(Number);
@@ -277,11 +299,14 @@
 
     let endISO = new Date(new Date(startISO).getTime() + (d2 - d1)).toISOString();
 
-    shifts.push({ date, startISO, endISO, breakMins, isHoliday });
+    if (editIndex === -1) {
+      shifts.push({ date, startISO, endISO, breakMins, isHoliday });
+    } else {
+      shifts[editIndex] = { date, startISO, endISO, breakMins, isHoliday };
+    }
+
     saveAndRender();
     closeForm();
-
-    document.getElementById('isHoliday').checked = false;
   }
 
   function loadExcelForce() {
