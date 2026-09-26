@@ -54,15 +54,26 @@
       margin-bottom: 14px;
     }
     button.btn-save { background: #00e676; color: #000; font-weight: bold; border: none; font-size: 1.1rem; margin-top: 8px; }
+    button.btn-delete { background: #d32f2f; color: #fff; font-weight: bold; border: none; font-size: 1.1rem; margin-top: 4px; display: none; }
     button.btn-cancel { background: #444; color: #fff; border: none; margin-top: 4px; }
     button.btn-sec { background: #333; color: #fff; margin-top: 6px; }
+    
     .val-box { background: #252525; padding: 10px; border-radius: 6px; text-align: center; margin-bottom: 8px; }
     .val { font-size: 1.5rem; font-weight: bold; color: #00e676; }
+    
     table { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 0.85rem; }
     th, td { padding: 12px 8px; border-bottom: 1px solid #333; text-align: left; }
     th { color: #aaa; }
-    tr.clickable-row { cursor: pointer; }
-    tr.clickable-row:active { background-color: #2a2a2a; }
+    
+    /* Κάνουμε τις γραμμές να ανταποκρίνονται άμεσα στο πάτημα */
+    tr.clickable-row {
+      cursor: pointer;
+      transition: background-color 0.1s ease;
+    }
+    tr.clickable-row:active, tr.clickable-row:hover {
+      background-color: #2c2c2c;
+    }
+
     .warn-badge {
       background: #ff9800;
       color: #000;
@@ -120,7 +131,8 @@
       <span>🎉 Είναι Αργία / Σαββατοκύριακο (18€/ώρα)</span>
     </label>
 
-    <button class="btn-save" onclick="saveEntry()">💾 Αποθήκευση</button>
+    <button class="btn-save" onclick="saveEntry()">💾 Αποθήκευση Αλλαγών</button>
+    <button class="btn-delete" id="deleteBtn" onclick="deleteCurrentEntry()">🗑️ Διαγραφή Βάρδιας</button>
     <button class="btn-cancel" onclick="closeForm()">Ακύρωση</button>
   </div>
 
@@ -142,7 +154,7 @@
   </div>
 
   <div class="card">
-    <h3 style="margin-top:0;">Ιστορικό Βαρδιών <span style="font-size:0.75rem; color:#aaa; font-weight:normal;">(Πατήστε για επεξεργασία/διαγραφή)</span></h3>
+    <h3 style="margin-top:0;">Ιστορικό Βαρδιών <span style="font-size:0.75rem; color:#aaa; font-weight:normal;">(Πατήστε μια γραμμή για επεξεργασία/διαγραφή)</span></h3>
     <table>
       <thead>
         <tr>
@@ -175,11 +187,13 @@
     { date: "2026-09-25", startISO: "2026-09-25T10:00:00", endISO: "2026-09-25T23:45:00", breakMins: 0, isHoliday: false }
   ];
 
-  let stored = localStorage.getItem('extrahours_v8');
+  let stored = localStorage.getItem('extrahours_v11');
   let shifts = stored ? JSON.parse(stored) : [...excelDefaultShifts];
 
   function openForm(index = -1) {
     document.getElementById('editIndex').value = index;
+    const deleteBtn = document.getElementById('deleteBtn');
+
     if (index === -1) {
       document.getElementById('formTitle').innerText = 'Καταχώρηση Βάρδιας';
       document.getElementById('workDate').value = new Date().toISOString().substring(0, 10);
@@ -187,9 +201,10 @@
       document.getElementById('endTime').value = '16:00';
       document.getElementById('breakMins').value = '0';
       document.getElementById('isHoliday').checked = false;
+      deleteBtn.style.display = 'none';
     } else {
       let item = shifts[index];
-      document.getElementById('formTitle').innerText = 'Επεξεργασία Βάρδιας';
+      document.getElementById('formTitle').innerText = 'Επεξεργασία / Διαγραφή Βάρδιας';
       document.getElementById('workDate').value = item.date;
       let sDate = new Date(item.startISO);
       document.getElementById('startTime').value = sDate.toTimeString().substring(0, 5);
@@ -199,15 +214,17 @@
       }
       document.getElementById('breakMins').value = item.breakMins || 0;
       document.getElementById('isHoliday').checked = !!item.isHoliday;
+      deleteBtn.style.display = 'block'; // Εμφανίζει το κόκκινο κουμπί διαγραφής μέσα στη φόρμα
     }
     document.getElementById('formCard').style.display = 'block';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
   function closeForm() { document.getElementById('formCard').style.display = 'none'; }
 
   function saveAndRender() {
     shifts.sort((a, b) => new Date(a.startISO) - new Date(b.startISO));
-    localStorage.setItem('extrahours_v8', JSON.stringify(shifts));
+    localStorage.setItem('extrahours_v11', JSON.stringify(shifts));
     
     const tbody = document.getElementById('logsTable');
     tbody.innerHTML = '';
@@ -307,6 +324,17 @@
 
     saveAndRender();
     closeForm();
+  }
+
+  function deleteCurrentEntry() {
+    const editIndex = parseInt(document.getElementById('editIndex').value);
+    if (editIndex >= 0) {
+      if (confirm('Σίγουρα θέλεις να διαγράψεις αυτή τη βάρδια;')) {
+        shifts.splice(editIndex, 1);
+        saveAndRender();
+        closeForm();
+      }
+    }
   }
 
   function loadExcelForce() {
