@@ -32,6 +32,18 @@
       font-size: 1rem;
       box-sizing: border-box;
     }
+    .checkbox-container {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin: 12px 0;
+      cursor: pointer;
+    }
+    .checkbox-container input {
+      width: auto;
+      margin: 0;
+      transform: scale(1.4);
+    }
     button.btn-open {
       background: #00e676;
       color: #000;
@@ -54,6 +66,16 @@
     .warn-badge {
       background: #ff9800;
       color: #000;
+      font-size: 0.75rem;
+      font-weight: bold;
+      padding: 2px 6px;
+      border-radius: 4px;
+      display: inline-block;
+      margin-top: 4px;
+    }
+    .holiday-badge {
+      background: #e91e63;
+      color: #fff;
       font-size: 0.75rem;
       font-weight: bold;
       padding: 2px 6px;
@@ -91,17 +113,22 @@
       <option value="60">60 λεπτά</option>
     </select>
 
+    <label class="checkbox-container">
+      <input type="checkbox" id="isHoliday">
+      <span>🎉 Είναι Αργία (18€/ώρα)</span>
+    </label>
+
     <button class="btn-save" onclick="addEntry()">💾 Αποθήκευση</button>
     <button class="btn-cancel" onclick="closeForm()">Ακύρωση</button>
   </div>
 
   <div class="card">
     <div class="val-box">
-      <label>Συνολικές Ώρες</label>
+      <label>Σύνολο Έξτρα Ωρών (Υπερωρίες + Έλλειμμα)</label>
       <div class="val" id="totalHours">0.00 hrs</div>
     </div>
     <div class="val-box">
-      <label>Συνολική Αμοιβή (€9/ώρα + 20% υπερωρία)</label>
+      <label>Συνολική Αμοιβή</label>
       <div class="val" id="totalPay">€0.00</div>
     </div>
   </div>
@@ -113,12 +140,12 @@
   </div>
 
   <div class="card">
-    <h3 style="margin-top:0;">Ιστορικό Βαρδιών <span style="font-size:0.75rem; color:#aaa; font-weight:normal;">(Πατήστε πάνω σε μια εγγραφή για επιλογές)</span></h3>
+    <h3 style="margin-top:0;">Ιστορικό Βαρδιών <span style="font-size:0.75rem; color:#aaa; font-weight:normal;">(Πατήστε πάνω για διαγραφή)</span></h3>
     <table>
       <thead>
         <tr>
           <th>Ημερ.</th>
-          <th>Ώρες</th>
+          <th>Έξτρα Ώρες</th>
           <th>Ποσό</th>
         </tr>
       </thead>
@@ -129,69 +156,103 @@
 <script>
   document.getElementById('workDate').value = new Date().toISOString().substring(0, 10);
 
-  const excelDefaultData = [
-    { date: "2026-09-01", startISO: "2026-09-01T09:15:00", endISO: "2026-09-01T20:30:00", netHours: 11.25, pay: 107.10 },
-    { date: "2026-09-02", startISO: "2026-09-02T09:30:00", endISO: "2026-09-03T01:30:00", netHours: 16.00, pay: 158.40 },
-    { date: "2026-09-03", startISO: "2026-09-03T09:30:00", endISO: "2026-09-04T00:30:00", netHours: 15.00, pay: 147.60 },
-    { date: "2026-09-04", startISO: "2026-09-04T09:30:00", endISO: "2026-09-05T01:30:00", netHours: 16.00, pay: 158.40 },
-    { date: "2026-09-14", startISO: "2026-09-14T10:00:00", endISO: "2026-09-14T18:00:00", netHours: 8.00, pay: 72.00 },
-    { date: "2026-09-15", startISO: "2026-09-15T10:00:00", endISO: "2026-09-15T18:00:00", netHours: 8.00, pay: 72.00 },
-    { date: "2026-09-16", startISO: "2026-09-16T09:00:00", endISO: "2026-09-16T18:30:00", netHours: 9.50, pay: 88.20 },
-    { date: "2026-09-17", startISO: "2026-09-17T09:00:00", endISO: "2026-09-18T01:00:00", netHours: 16.00, pay: 158.40 },
-    { date: "2026-09-18", startISO: "2026-09-18T08:00:00", endISO: "2026-09-18T18:00:00", netHours: 10.00, pay: 93.60 },
-    { date: "2026-09-21", startISO: "2026-09-21T09:00:00", endISO: "2026-09-21T18:30:00", netHours: 9.50, pay: 88.20 },
-    { date: "2026-09-22", startISO: "2026-09-22T09:00:00", endISO: "2026-09-22T23:30:00", netHours: 14.50, pay: 142.20 },
-    { date: "2026-09-23", startISO: "2026-09-23T09:30:00", endISO: "2026-09-24T00:30:00", netHours: 15.00, pay: 147.60 },
-    { date: "2026-09-24", startISO: "2026-09-24T09:00:00", endISO: "2026-09-25T00:00:00", netHours: 15.00, pay: 147.60 },
-    { date: "2026-09-25", startISO: "2026-09-25T10:00:00", endISO: "2026-09-25T23:45:00", netHours: 13.75, pay: 134.10 }
+  // Δεδομένα από την εικόνα του Excel
+  const excelDefaultShifts = [
+    { date: "2026-09-01", startISO: "2026-09-01T09:15:00", endISO: "2026-09-01T20:30:00", breakMins: 0, isHoliday: false },
+    { date: "2026-09-02", startISO: "2026-09-02T09:30:00", endISO: "2026-09-03T01:30:00", breakMins: 0, isHoliday: false },
+    { date: "2026-09-03", startISO: "2026-09-03T09:30:00", endISO: "2026-09-04T00:30:00", breakMins: 0, isHoliday: false },
+    { date: "2026-09-04", startISO: "2026-09-04T09:30:00", endISO: "2026-09-05T01:30:00", breakMins: 0, isHoliday: false },
+    { date: "2026-09-14", startISO: "2026-09-14T10:00:00", endISO: "2026-09-14T18:00:00", breakMins: 0, isHoliday: false },
+    { date: "2026-09-15", startISO: "2026-09-15T10:00:00", endISO: "2026-09-15T18:00:00", breakMins: 0, isHoliday: false },
+    { date: "2026-09-16", startISO: "2026-09-16T09:00:00", endISO: "2026-09-16T18:30:00", breakMins: 0, isHoliday: false },
+    { date: "2026-09-17", startISO: "2026-09-17T09:00:00", endISO: "2026-09-18T01:00:00", breakMins: 0, isHoliday: false },
+    { date: "2026-09-18", startISO: "2026-09-18T08:00:00", endISO: "2026-09-18T18:00:00", breakMins: 0, isHoliday: false },
+    { date: "2026-09-21", startISO: "2026-09-21T09:00:00", endISO: "2026-09-21T18:30:00", breakMins: 0, isHoliday: false },
+    { date: "2026-09-22", startISO: "2026-09-22T09:00:00", endISO: "2026-09-22T23:30:00", breakMins: 0, isHoliday: false },
+    { date: "2026-09-23", startISO: "2026-09-23T09:30:00", endISO: "2026-09-24T00:30:00", breakMins: 0, isHoliday: false },
+    { date: "2026-09-24", startISO: "2026-09-24T09:00:00", endISO: "2026-09-25T00:00:00", breakMins: 0, isHoliday: false },
+    { date: "2026-09-25", startISO: "2026-09-25T10:00:00", endISO: "2026-09-25T23:45:00", breakMins: 0, isHoliday: false }
   ];
 
-  let stored = localStorage.getItem('extrahours_v3');
-  let entries = stored ? JSON.parse(stored) : [...excelDefaultData];
+  let stored = localStorage.getItem('extrahours_v7');
+  let shifts = stored ? JSON.parse(stored) : [...excelDefaultShifts];
 
   function openForm() { document.getElementById('formCard').style.display = 'block'; }
   function closeForm() { document.getElementById('formCard').style.display = 'none'; }
 
   function saveAndRender() {
-    entries.sort((a, b) => new Date(a.startISO) - new Date(b.startISO));
-    localStorage.setItem('extrahours_v3', JSON.stringify(entries));
+    shifts.sort((a, b) => new Date(a.startISO) - new Date(b.startISO));
+    localStorage.setItem('extrahours_v7', JSON.stringify(shifts));
     
     const tbody = document.getElementById('logsTable');
     tbody.innerHTML = '';
-    let sumHours = 0, sumPay = 0;
+    let grandTotalExtraHours = 0;
+    let grandTotalPay = 0;
 
-    entries.forEach((item, index) => {
-      sumHours += item.netHours;
-      sumPay += item.pay;
+    shifts.forEach((item, index) => {
+      let start = new Date(item.startISO);
+      let end = item.endISO ? new Date(item.endISO) : null;
 
+      if (!end) return; // Αν δεν υπάρχει λήξη ακόμα (π.χ. Σάββατο 26/09), προσπερνάμε τον υπολογισμό
+
+      let diffMins = (end - start) / (1000 * 60) - (item.breakMins || 0);
+      let totalHours = diffMins > 0 ? diffMins / 60 : 0;
+
+      // 1. Υπερωρίες (> 8 ώρες)
+      let otHours = totalHours > 8 ? (totalHours - 8) : 0;
+
+      // 2. Έλλειμμα Ανάπαυσης (< 11 ώρες)
+      let restDeficit = 0;
       let restWarning = '';
-      if (index > 0) {
-        let prevEnd = new Date(entries[index - 1].endISO);
-        let currStart = new Date(item.startISO);
-        let restHours = (currStart - prevEnd) / (1000 * 60 * 60);
-        
+
+      if (index > 0 && shifts[index - 1].endISO) {
+        let prevEnd = new Date(shifts[index - 1].endISO);
+        let restMins = (start - prevEnd) / (1000 * 60);
+        let restHours = restMins / 60;
+
         if (restHours < 11 && restHours >= 0) {
-          restWarning = `<br><span class="warn-badge">⚠️ ${restHours.toFixed(1)}h ανάπαυση (&lt;11h)</span>`;
+          restDeficit = 11 - restHours;
+          restWarning = `<br><span class="warn-badge">⚠️ Ανάπαυση ${restHours.toFixed(2)}h (&lt;11h)</span>`;
         }
+      }
+
+      // Έλεγχος αν η μέρα είναι Σαββατοκύριακο (0 = Κυριακή, 6 = Σάββατο)
+      let dayOfWeek = start.getDay();
+      let isWeekend = (dayOfWeek === 0 || dayOfWeek === 6);
+      let is18Rate = isWeekend || item.isHoliday;
+
+      let rate = is18Rate ? 18.00 : 9.00;
+      let rowExtraHours = otHours + restDeficit;
+      let rowPay = rowExtraHours * rate;
+
+      grandTotalExtraHours += rowExtraHours;
+      grandTotalPay += rowPay;
+
+      let badge = '';
+      if (item.isHoliday) {
+        badge = '<br><span class="holiday-badge">🎉 Αργία (18€)</span>';
+      } else if (isWeekend) {
+        badge = '<br><span class="holiday-badge">📅 Σ/Κ (18€)</span>';
       }
 
       tbody.innerHTML += `
         <tr class="clickable-row" onclick="onRowClick(${index})">
-          <td>${item.date}${restWarning}</td>
-          <td>${item.netHours.toFixed(2)}h</td>
-          <td>€${item.pay.toFixed(2)}</td>
+          <td>${item.date}${badge}${restWarning}</td>
+          <td>${rowExtraHours.toFixed(2)}h</td>
+          <td>€${rowPay.toFixed(2)} <span style="font-size:0.7rem; color:#888;">(${rate}€/h)</span></td>
         </tr>`;
     });
 
-    document.getElementById('totalHours').innerText = sumHours.toFixed(2) + ' hrs';
-    document.getElementById('totalPay').innerText = '€' + sumPay.toFixed(2);
+    document.getElementById('totalHours').innerText = grandTotalExtraHours.toFixed(2) + ' hrs';
+    document.getElementById('totalPay').innerText = '€' + grandTotalPay.toFixed(2);
   }
 
   function onRowClick(index) {
-    let item = entries[index];
-    let confirmDel = confirm(`Επιλογές για τη βάρδια στις ${item.date} (${item.netHours.toFixed(2)}h):\n\nΘέλετε να ΔΙΑΓΡΑΨΕΤΕ αυτή τη βάρδια;`);
+    let item = shifts[index];
+    let confirmDel = confirm(`Θέλετε να διαγράψετε τη βάρδια στις ${item.date};`);
     if (confirmDel) {
-      deleteEntry(index);
+      shifts.splice(index, 1);
+      saveAndRender();
     }
   }
 
@@ -200,11 +261,12 @@
     const start = document.getElementById('startTime').value;
     const end = document.getElementById('endTime').value;
     const breakMins = parseInt(document.getElementById('breakMins').value);
+    const isHoliday = document.getElementById('isHoliday').checked;
 
     if(!date || !start || !end) return alert('Συμπλήρωσε όλα τα πεδία');
 
     let startISO = new Date(`${date}T${start}`).toISOString();
-    if (entries.some(e => e.startISO === startISO)) return alert('Η βάρδια υπάρχει ήδη!');
+    if (shifts.some(e => e.startISO === startISO)) return alert('Η βάρδια υπάρχει ήδη!');
 
     let [sH, sM] = start.split(':').map(Number);
     let [eH, eM] = end.split(':').map(Number);
@@ -214,32 +276,25 @@
     if (d2 <= d1) d2.setDate(d2.getDate() + 1);
 
     let endISO = new Date(new Date(startISO).getTime() + (d2 - d1)).toISOString();
-    let diffMins = (d2 - d1) / (1000 * 60) - breakMins;
-    if (diffMins < 0) diffMins = 0;
 
-    let netHours = diffMins / 60;
-    let baseRate = 9.0;
-    let pay = netHours > 8 ? (8 * baseRate) + ((netHours - 8) * (baseRate * 1.2)) : netHours * baseRate;
-
-    entries.push({ date, startISO, endISO, netHours, pay });
+    shifts.push({ date, startISO, endISO, breakMins, isHoliday });
     saveAndRender();
     closeForm();
-  }
 
-  function deleteEntry(index) {
-    entries.splice(index, 1);
-    saveAndRender();
+    document.getElementById('isHoliday').checked = false;
   }
 
   function loadExcelForce() {
-    entries = [...excelDefaultData];
+    shifts = [...excelDefaultShifts];
     saveAndRender();
   }
 
   function exportCSV() {
-    if(entries.length === 0) return alert('Δεν υπάρχουν δεδομένα!');
-    let csv = 'Ημερομηνία,Ώρες,Αμοιβή (€)\n';
-    entries.forEach(e => { csv += `${e.date},${e.netHours.toFixed(2)},${e.pay.toFixed(2)}\n`; });
+    if(shifts.length === 0) return alert('Δεν υπάρχουν δεδομένα!');
+    let csv = 'Ημερομηνία,Έξτρα Ώρες,Αμοιβή (€)\n';
+    shifts.forEach(e => {
+      csv += `${e.date}\n`;
+    });
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
@@ -248,11 +303,11 @@
   }
 
   function sendHR() {
-    if(entries.length === 0) return alert('Δεν υπάρχουν δεδομένα!');
-    let totalH = entries.reduce((a,b) => a + b.netHours, 0).toFixed(2);
-    let totalP = entries.reduce((a,b) => a + b.pay, 0).toFixed(2);
-    let body = `Καλησπέρα,\n\nΣας αποστέλλω τις ώρες εργασίας μου:\nΣύνολο Ωρών: ${totalH}\nΣύνολο Αμοιβής: €${totalP}\n\nΕυχαριστώ.`;
-    window.location.href = `mailto:hr@company.com?subject=Ώρες Εργασίας&body=${encodeURIComponent(body)}`;
+    if(shifts.length === 0) return alert('Δεν υπάρχουν δεδομένα!');
+    let totalH = document.getElementById('totalHours').innerText;
+    let totalP = document.getElementById('totalPay').innerText;
+    let body = `Καλησπέρα,\n\nΣας αποστέλλω τις έξτρα ώρες εργασίας μου:\nΣύνολο Έξτρα Ωρών: ${totalH}\nΣύνολο Αμοιβής: ${totalP}\n\nΕυχαριστώ.`;
+    window.location.href = `mailto:hr@company.com?subject=Έξτρα Ώρες&body=${encodeURIComponent(body)}`;
   }
 
   saveAndRender();
