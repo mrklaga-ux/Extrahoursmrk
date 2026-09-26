@@ -70,7 +70,7 @@
   <!-- ΚΟΥΜΠΙ ΑΝΟΙΓΜΑΤΟΣ ΜΕΝΟΥ -->
   <button class="btn-open" onclick="openForm()">➕ Νέα Καταχώρηση</button>
 
-  <!-- ΦΟΡΜΑ (ΑΝΟΙΓΕΙ ΜΟΝΟ ΠΑΤΩΝΤΑΣ ΤΟ ΚΟΥΜΠΙ) -->
+  <!-- ΦΟΡΜΑ -->
   <div class="card" id="formCard">
     <h3 style="margin-top:0; color:#00e676;">Καταχώρηση Βάρδιας</h3>
     
@@ -112,7 +112,7 @@
   <div class="card">
     <button class="btn-sec" onclick="exportCSV()">📊 Εξαγωγή σε Excel (CSV)</button>
     <button class="btn-sec" onclick="sendHR()">✉️ Αποστολή στο HR</button>
-    <button class="btn-sec" style="background:#b71c1c; color:#fff;" onclick="clearAll()">⚠️ Καθαρισμός Όλων</button>
+    <button class="btn-sec" style="background:#b71c1c; color:#fff;" onclick="resetExcelData()">🔄 Επαναφορά Δεδομένων Excel</button>
   </div>
 
   <!-- ΙΣΤΟΡΙΚΟ -->
@@ -134,8 +134,8 @@
 <script>
   document.getElementById('workDate').value = new Date().toISOString().substring(0, 10);
 
-  // Αρχικά δεδομένα από το Excel αν δεν υπάρχουν ήδη αποθηκευμένα
-  const excelData = [
+  // Τα δεδομένα από το Excel
+  const excelDefaultData = [
     { date: "2026-09-01", startISO: "2026-09-01T09:15:00", endISO: "2026-09-01T20:30:00", netHours: 11.25, pay: 107.10 },
     { date: "2026-09-02", startISO: "2026-09-02T09:30:00", endISO: "2026-09-03T01:30:00", netHours: 16.00, pay: 158.40 },
     { date: "2026-09-03", startISO: "2026-09-03T09:30:00", endISO: "2026-09-04T00:30:00", netHours: 15.00, pay: 147.60 },
@@ -152,8 +152,8 @@
     { date: "2026-09-25", startISO: "2026-09-25T10:00:00", endISO: "2026-09-25T23:45:00", netHours: 13.75, pay: 134.10 }
   ];
 
-  let storedData = localStorage.getItem('extrahours_db');
-  let entries = storedData ? JSON.parse(storedData) : excelData;
+  let stored = localStorage.getItem('extrahours_db_v2');
+  let entries = (stored && JSON.parse(stored).length > 0) ? JSON.parse(stored) : [...excelDefaultData];
 
   function openForm() {
     document.getElementById('formCard').style.display = 'block';
@@ -165,7 +165,7 @@
 
   function saveAndRender() {
     entries.sort((a, b) => new Date(a.startISO) - new Date(b.startISO));
-    localStorage.setItem('extrahours_db', JSON.stringify(entries));
+    localStorage.setItem('extrahours_db_v2', JSON.stringify(entries));
     
     const tbody = document.getElementById('logsTable');
     tbody.innerHTML = '';
@@ -240,11 +240,9 @@
     saveAndRender();
   }
 
-  function clearAll() {
-    if (confirm('Θέλεις σίγουρα να διαγράψεις ΟΛΕΣ τις καταχωρήσεις;')) {
-      entries = [];
-      saveAndRender();
-    }
+  function resetExcelData() {
+    entries = [...excelDefaultData];
+    saveAndRender();
   }
 
   function exportCSV() {
