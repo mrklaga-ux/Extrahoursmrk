@@ -147,11 +147,17 @@
   </div>
 
   <div class="card">
-    <label>Επιλογή Περιόδου για Εξαγωγή Excel</label>
-    <select id="exportPeriod">
-      <option value="current">Τρέχων Μήνας</option>
+    <label>Τρόπος Εξαγωγής Excel</label>
+    <select id="exportMode" onchange="toggleExportMode()">
+      <option value="month">Επιλογή Μήνα</option>
       <option value="all">Όλοι οι Μήνες / Όλο το Έτος</option>
     </select>
+
+    <div id="monthSelectorDiv">
+      <label>Επιλέξτε Μήνα</label>
+      <input type="month" id="exportMonth">
+    </div>
+
     <button class="btn-sec" onclick="exportCSV()">📊 Εξαγωγή σε Excel (CSV)</button>
     <button class="btn-sec" onclick="sendHR()">✉️ Αποστολή στο HR</button>
     <button class="btn-sec" style="background:#2e7d32; color:#fff;" onclick="loadExcelForce()">🔄 Επαναφορά Δεδομένων Excel</button>
@@ -172,7 +178,9 @@
   </div>
 
 <script>
-  document.getElementById('workDate').value = new Date().toISOString().substring(0, 10);
+  const todayStr = new Date().toISOString().substring(0, 10);
+  document.getElementById('workDate').value = todayStr;
+  document.getElementById('exportMonth').value = todayStr.substring(0, 7);
 
   const excelDefaultShifts = [
     { date: "2026-09-01", startISO: "2026-09-01T09:15:00", endISO: "2026-09-01T20:30:00", breakMins: 0, isHoliday: false },
@@ -193,6 +201,11 @@
 
   let stored = localStorage.getItem('extrahours_v12');
   let shifts = stored ? JSON.parse(stored) : [...excelDefaultShifts];
+
+  function toggleExportMode() {
+    const mode = document.getElementById('exportMode').value;
+    document.getElementById('monthSelectorDiv').style.display = (mode === 'month') ? 'block' : 'none';
+  }
 
   function openForm(index = -1) {
     document.getElementById('editIndex').value = index;
@@ -349,15 +362,15 @@
   function exportCSV() {
     if(shifts.length === 0) return alert('Δεν υπάρχουν δεδομένα!');
     
-    const period = document.getElementById('exportPeriod').value;
-    const currentMonthStr = new Date().toISOString().substring(0, 7); // 'YYYY-MM'
+    const mode = document.getElementById('exportMode').value;
+    const selectedMonth = document.getElementById('exportMonth').value; // π.χ. '2026-09'
 
     let csv = '\uFEFFΗμερομηνία,Έναρξη,Λήξη,Έξτρα Ώρες,Ποσό (€)\n';
     let count = 0;
 
     shifts.forEach((item, index) => {
-      if (period === 'current' && !item.date.startsWith(currentMonthStr)) {
-        return; // Παράλειψη αν δεν είναι ο τρέχων μήνας
+      if (mode === 'month' && !item.date.startsWith(selectedMonth)) {
+        return; // Παράλειψη αν δεν ανήκει στον επιλεγμένο μήνα
       }
 
       let start = new Date(item.startISO);
@@ -402,7 +415,7 @@
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
-    link.download = `ExtraHours_${period}_${new Date().toISOString().slice(0,10)}.csv`;
+    link.download = `ExtraHours_${mode === 'month' ? selectedMonth : 'All'}_${new Date().toISOString().slice(0,10)}.csv`;
     link.click();
   }
 
