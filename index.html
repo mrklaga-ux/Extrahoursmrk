@@ -33,22 +33,6 @@
       font-size: 1rem;
       box-sizing: border-box;
     }
-    .checkbox-container {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      margin: 14px 0;
-      cursor: pointer;
-      background: #252525;
-      padding: 10px;
-      border-radius: 8px;
-    }
-    .checkbox-container input {
-      width: auto;
-      margin: 0;
-      transform: scale(1.4);
-      accent-color: #00e676;
-    }
     button.btn-open {
       background: #00e676;
       color: #000;
@@ -80,27 +64,6 @@
     tr.clickable-row:active, tr.clickable-row:hover {
       background-color: #2c2c2c;
     }
-
-    .warn-badge {
-      background: #ff9800;
-      color: #000;
-      font-size: 0.75rem;
-      font-weight: bold;
-      padding: 3px 6px;
-      border-radius: 4px;
-      display: inline-block;
-      margin-top: 4px;
-    }
-    .holiday-badge {
-      background: #e91e63;
-      color: #fff;
-      font-size: 0.75rem;
-      font-weight: bold;
-      padding: 3px 6px;
-      border-radius: 4px;
-      display: inline-block;
-      margin-top: 4px;
-    }
     #formCard { display: none; }
   </style>
 </head>
@@ -119,24 +82,31 @@
     <input type="date" id="workDate">
 
     <label>Ώρα Έναρξης</label>
-    <input type="time" id="startTime" value="08:00">
+    <input type="time" id="startTime" value="12:00">
 
     <label>Ώρα Λήξης</label>
-    <input type="time" id="endTime" value="16:00">
+    <input type="time" id="endTime" value="20:00">
 
-    <label>Διάλειμμα (λεπτά)</label>
-    <select id="breakMins">
-      <option value="0">0 λεπτά</option>
-      <option value="15">15 λεπτά</option>
-      <option value="30">30 λεπτά</option>
-      <option value="45">45 λεπτά</option>
-      <option value="60">60 λεπτά</option>
-    </select>
+    <label>Συνολικές Ώρες Βάρδιας</label>
+    <input type="number" step="0.25" id="totalShiftHours" value="8.00">
 
-    <label class="checkbox-container">
-      <input type="checkbox" id="isHoliday">
-      <span>🎉 Είναι Αργία / Ειδική Ημέρα (18€/ώρα)</span>
-    </label>
+    <label>Ώρες Ανάπαυσης</label>
+    <input type="number" step="0.25" id="restHours" value="0.00">
+
+    <label>Κανονικές Ώρες</label>
+    <input type="number" step="0.25" id="normalHours" value="0.00">
+
+    <label>Υπερωρίες</label>
+    <input type="number" step="0.25" id="overtimeHours" value="0.00">
+
+    <label>Σύνολο Υπερωριών</label>
+    <input type="number" step="0.25" id="totalOvertime" value="0.00">
+
+    <label>Διάφορα</label>
+    <input type="number" step="0.25" id="miscHours" value="9.00">
+
+    <label>Τελικό Ποσό / Σύνολο (€)</label>
+    <input type="number" step="0.01" id="finalAmount" value="0.00">
 
     <button class="btn-save" onclick="saveEntry()">💾 Αποθήκευση</button>
     <button class="btn-delete" id="deleteBtn" onclick="deleteCurrentEntry()">🗑️ Διαγραφή Βάρδιας</button>
@@ -145,40 +115,31 @@
 
   <div class="card">
     <div class="val-box">
-      <label>Σύνολο Έξτρα Ωρών (Υπερωρίες + Έλλειμμα Ανάπαυσης)</label>
-      <div class="val" id="totalHours">0.00 hrs</div>
+      <label>Σύνολο Υπερωριών Μήνα</label>
+      <div class="val" id="totalHoursVal">0.00 hrs</div>
     </div>
     <div class="val-box">
-      <label>Συνολική Εκτιμώμενη Αμοιβή Μήνα</label>
-      <div class="val" id="totalPay">€0.00</div>
+      <label>Συνολικό Τελικό Ποσό Μήνα</label>
+      <div class="val" id="totalPayVal">€0.00</div>
     </div>
   </div>
 
   <div class="card">
-    <label>Επιλογή Περιόδου Εξαγωγής Excel</label>
-    <select id="exportMode" onchange="toggleExportMode()">
-      <option value="month">Συγκεκριμένος Μήνας</option>
-      <option value="all">Όλο το Ιστορικό (Όλοι οι Μήνες)</option>
-    </select>
+    <label>Μήνας Αναφοράς</label>
+    <input type="month" id="exportMonth" value="2026-09">
 
-    <div id="monthSelectorDiv">
-      <label>Μήνας Αναφοράς</label>
-      <input type="month" id="exportMonth" value="2026-09">
-    </div>
-
-    <button class="btn-sec" onclick="exportCSV()">📊 Εξαγωγή σε Καθαρό Excel (CSV)</button>
+    <button class="btn-sec" onclick="exportCSV()">📊 Εξαγωγή σε Καθαρό Excel (CSV με Σύνολα)</button>
     <button class="btn-sheets" onclick="syncGoogleSheets()">🟢 Οδηγίες για Google Sheets</button>
-    <button class="btn-sec" onclick="sendHR()">✉️ Αποστολή στο HR</button>
   </div>
 
   <div class="card">
-    <h3 style="margin-top:0;">Ιστορικό Μήνα & Βαρδιών <span style="font-size:0.75rem; color:#aaa; font-weight:normal;">(Πατήστε μια γραμμή για διόρθωση)</span></h3>
+    <h3 style="margin-top:0;">Ιστορικό Σεπτεμβρίου 2026 <span style="font-size:0.75rem; color:#aaa; font-weight:normal;">(Πατήστε μια γραμμή για διόρθωση)</span></h3>
     <table>
       <thead>
         <tr>
-          <th>Ημερ. & Ώρες</th>
-          <th>Έξτρα</th>
-          <th>Ποσό</th>
+          <th>Ημερομηνία</th>
+          <th>Ώρες</th>
+          <th>Τελικό Ποσό</th>
         </tr>
       </thead>
       <tbody id="logsTable"></tbody>
@@ -186,77 +147,60 @@
   </div>
 
 <script>
-  const todayStr = new Date().toISOString().substring(0, 10);
-  document.getElementById('workDate').value = todayStr;
-
-  // ΠΛΗΡΗΣ ΟΡΙΣΜΟΣ ΟΛΩΝ ΤΩΝ ΗΜΕΡΩΝ ΤΟΥ ΣΕΠΤΕΜΒΡΙΟΥ 2026 (1 εως 30)
-  let defaultShifts = [];
-  let daysInSept2026 = [
-    {d: "2026-09-01", s: "2026-09-01T12:15:00.000Z", e: "2026-09-01T23:30:00.000Z"},
-    {d: "2026-09-02", s: "2026-09-02T12:30:00.000Z", e: "2026-09-03T04:30:00.000Z"},
-    {d: "2026-09-03", s: "2026-09-03T12:30:00.000Z", e: "2026-09-03T03:30:00.000Z"},
-    {d: "2026-09-04", s: "2026-09-04T12:30:00.000Z", e: "2026-09-05T04:30:00.000Z"},
-    {d: "2026-09-14", s: "2026-09-14T13:00:00.000Z", e: "2026-09-14T21:00:00.000Z"},
-    {d: "2026-09-15", s: "2026-09-15T13:00:00.000Z", e: "2026-09-15T21:00:00.000Z"},
-    {d: "2026-09-16", s: "2026-09-16T12:00:00.000Z", e: "2026-09-16T21:30:00.000Z"},
-    {d: "2026-09-17", s: "2026-09-17T12:00:00.000Z", e: "2026-09-18T04:00:00.000Z"},
-    {d: "2026-09-18", s: "2026-09-18T11:00:00.000Z", e: "2026-09-18T21:00:00.000Z"},
-    {d: "2026-09-21", s: "2026-09-21T12:00:00.000Z", e: "2026-09-21T21:30:00.000Z"},
-    {d: "2026-09-22", s: "2026-09-22T12:00:00.000Z", e: "2026-09-23T02:30:00.000Z"},
-    {d: "2026-09-23", s: "2026-09-23T12:30:00.000Z", e: "2026-09-24T03:30:00.000Z"},
-    {d: "2026-09-24", s: "2026-09-24T12:00:00.000Z", e: "2026-09-25T03:00:00.000Z"},
-    {d: "2026-09-25", s: "2026-09-25T13:00:00.000Z", e: "2026-09-26T02:45:00.000Z"},
-    {d: "2026-09-26", s: "2026-09-26T13:00:00.000Z", e: "2026-09-27T00:00:00.000Z"}
+  // ΑΚΡΙΒΗ ΔΕΔΟΜΕΝΑ ΑΠΟ ΤΟ EXCEL ΤΟΥ ΧΡΗΣΤΗ (Σεπτέμβριος 2026)
+  let defaultShifts = [
+    {date: "2026-09-01", start: "12:15", end: "23:30", totalShift: 11.25, rest: 24.00, normal: 3.25, overtime: 0.00, totalOT: 3.25, misc: 9.00, finalAmt: 29.25},
+    {date: "2026-09-02", start: "12:30", end: "04:30", totalShift: 16.00, rest: 13.00, normal: 8.00, overtime: 0.00, totalOT: 8.00, misc: 9.00, finalAmt: 72.00},
+    {date: "2026-09-03", start: "12:30", end: "03:30", totalShift: 15.00, rest: 8.00, normal: 7.00, overtime: 3.00, totalOT: 10.00, misc: 9.00, finalAmt: 90.00},
+    {date: "2026-09-04", start: "12:30", end: "04:30", totalShift: 16.00, rest: 9.00, normal: 8.00, overtime: 2.00, totalOT: 10.00, misc: 9.00, finalAmt: 90.00},
+    {date: "2026-09-14", start: "13:00", end: "21:00", totalShift: 8.00, rest: 224.50, normal: 0.00, overtime: 0.00, totalOT: 0.00, misc: 9.00, finalAmt: 0.00},
+    {date: "2026-09-15", start: "13:00", end: "21:00", totalShift: 8.00, rest: 16.00, normal: 0.00, overtime: 0.00, totalOT: 0.00, misc: 9.00, finalAmt: 0.00},
+    {date: "2026-09-16", start: "12:00", end: "21:30", totalShift: 9.50, rest: 15.00, normal: 1.50, overtime: 0.00, totalOT: 1.50, misc: 9.00, finalAmt: 13.50},
+    {date: "2026-09-17", start: "12:00", end: "04:00", totalShift: 16.00, rest: 14.50, normal: 8.00, overtime: 0.00, totalOT: 8.00, misc: 9.00, finalAmt: 72.00},
+    {date: "2026-09-18", start: "11:00", end: "21:00", totalShift: 10.00, rest: 7.00, normal: 2.00, overtime: 4.00, totalOT: 6.00, misc: 9.00, finalAmt: 54.00},
+    {date: "2026-09-21", start: "12:00", end: "21:30", totalShift: 9.50, rest: 63.00, normal: 1.50, overtime: 0.00, totalOT: 1.50, misc: 9.00, finalAmt: 13.50},
+    {date: "2026-09-22", start: "12:00", end: "02:30", totalShift: 14.50, rest: 14.50, normal: 6.50, overtime: 0.00, totalOT: 6.50, misc: 9.00, finalAmt: 58.50},
+    {date: "2026-09-23", start: "12:30", end: "03:30", totalShift: 15.00, rest: 10.00, normal: 7.00, overtime: 1.00, totalOT: 8.00, misc: 9.00, finalAmt: 72.00},
+    {date: "2026-09-24", start: "12:00", end: "03:00", totalShift: 15.00, rest: 8.50, normal: 7.00, overtime: 2.50, totalOT: 9.50, misc: 9.00, finalAmt: 85.50},
+    {date: "2026-09-25", start: "13:00", end: "02:45", totalShift: 13.75, rest: 10.00, normal: 5.75, overtime: 1.00, totalOT: 6.75, misc: 9.00, finalAmt: 60.75},
+    {date: "2026-09-26", start: "13:00", end: "00:00", totalShift: 24.00, rest: 0.00, normal: 0.00, overtime: 0.00, totalOT: 0.00, misc: 9.00, finalAmt: 0.00}
   ];
 
-  for(let i=1; i<=30; i++) {
-    let dayStr = `2026-09-${i < 10 ? '0'+i : i}`;
-    let found = daysInSept2026.find(x => x.d === dayStr);
-    if(found) {
-      defaultShifts.push({ date: found.d, startISO: found.s, endISO: found.e, breakMins: 0, isHoliday: false });
-    } else {
-      // Κενή μέρα για να υπάρχει πλήρης εικόνα όλου του μήνα
-      defaultShifts.push({ date: dayStr, startISO: `${dayStr}T08:00:00.000Z`, endISO: null, breakMins: 0, isHoliday: false });
-    }
-  }
-
-  let stored = localStorage.getItem('extrahours_real_data_v7');
+  let stored = localStorage.getItem('extrahours_exact_data_v1');
   let shifts = stored ? JSON.parse(stored) : defaultShifts;
   if (!stored) {
-    localStorage.setItem('extrahours_real_data_v7', JSON.stringify(shifts));
-  }
-
-  function toggleExportMode() {
-    const mode = document.getElementById('exportMode').value;
-    document.getElementById('monthSelectorDiv').style.display = (mode === 'month') ? 'block' : 'none';
+    localStorage.setItem('extrahours_exact_data_v1', JSON.stringify(shifts));
   }
 
   function openForm(index = -1) {
     document.getElementById('editIndex').value = index;
     const deleteBtn = document.getElementById('deleteBtn');
-    let item = shifts[index];
-
-    if (!item.endISO && index === -1) {
-      document.getElementById('formTitle').innerText = 'Καταχώρηση Βάρδιας';
+    if (index === -1) {
+      document.getElementById('formTitle').innerText = 'Νέα Καταχώρηση Βάρδιας';
       document.getElementById('workDate').value = new Date().toISOString().substring(0, 10);
-      document.getElementById('startTime').value = '08:00';
-      document.getElementById('endTime').value = '16:00';
-      document.getElementById('breakMins').value = '0';
-      document.getElementById('isHoliday').checked = false;
+      document.getElementById('startTime').value = '12:00';
+      document.getElementById('endTime').value = '20:00';
+      document.getElementById('totalShiftHours').value = '8.00';
+      document.getElementById('restHours').value = '0.00';
+      document.getElementById('normalHours').value = '0.00';
+      document.getElementById('overtimeHours').value = '0.00';
+      document.getElementById('totalOvertime').value = '0.00';
+      document.getElementById('miscHours').value = '9.00';
+      document.getElementById('finalAmount').value = '0.00';
       deleteBtn.style.display = 'none';
     } else {
       document.getElementById('formTitle').innerText = 'Επεξεργασία Βάρδιας';
+      let item = shifts[index];
       document.getElementById('workDate').value = item.date;
-      let sDate = new Date(item.startISO);
-      document.getElementById('startTime').value = sDate.toTimeString().substring(0, 5);
-      if (item.endISO) {
-        let eDate = new Date(item.endISO);
-        document.getElementById('endTime').value = eDate.toTimeString().substring(0, 5);
-      } else {
-        document.getElementById('endTime').value = '';
-      }
-      document.getElementById('breakMins').value = item.breakMins || 0;
-      document.getElementById('isHoliday').checked = !!item.isHoliday;
+      document.getElementById('startTime').value = item.start;
+      document.getElementById('endTime').value = item.end;
+      document.getElementById('totalShiftHours').value = item.totalShift;
+      document.getElementById('restHours').value = item.rest;
+      document.getElementById('normalHours').value = item.normal;
+      document.getElementById('overtimeHours').value = item.overtime;
+      document.getElementById('totalOvertime').value = item.totalOT;
+      document.getElementById('miscHours').value = item.misc;
+      document.getElementById('finalAmount').value = item.finalAmt;
       deleteBtn.style.display = 'block';
     }
     document.getElementById('formCard').style.display = 'block';
@@ -266,95 +210,51 @@
   function closeForm() { document.getElementById('formCard').style.display = 'none'; }
 
   function saveAndRender() {
-    shifts.sort((a, b) => new Date(a.startISO) - new Date(b.startISO));
-    localStorage.setItem('extrahours_real_data_v7', JSON.stringify(shifts));
+    shifts.sort((a, b) => new Date(a.date) - new Date(b.date));
+    localStorage.setItem('extrahours_exact_data_v1', JSON.stringify(shifts));
     
     const tbody = document.getElementById('logsTable');
     tbody.innerHTML = '';
-    let grandTotalExtraHours = 0;
-    let grandTotalPay = 0;
+    let totalOTSum = 0;
+    let totalPaySum = 0;
 
     shifts.forEach((item, index) => {
-      let start = new Date(item.startISO);
-      let startTimeStr = start.toTimeString().substring(0, 5);
-      let endTimeStr = item.endISO ? new Date(item.endISO).toTimeString().substring(0, 5) : 'Ανοιχτή/Ρεπό';
-
-      let end = item.endISO ? new Date(item.endISO) : null;
-      if (!end) {
-        tbody.innerHTML += `
-          <tr class="clickable-row" onclick="openForm(${index})">
-            <td><b>${item.date}</b><br><span style="color:#666; font-size:0.8rem;">⚪ Κενή / Ρεπό</span></td>
-            <td>-</td>
-            <td>-</td>
-          </tr>`;
-        return;
-      }
-
-      let diffMins = (end - start) / (1000 * 60) - (item.breakMins || 0);
-      let totalHours = diffMins > 0 ? diffMins / 60 : 0;
-      let otHours = totalHours > 8 ? (totalHours - 8) : 0;
-
-      let restDeficit = 0;
-      let restWarning = '';
-      if (index > 0 && shifts[index - 1].endISO) {
-        let prevEnd = new Date(shifts[index - 1].endISO);
-        let restMins = (start - prevEnd) / (1000 * 60);
-        let restHoursVal = restMins / 60;
-        if (restHoursVal < 11 && restHoursVal >= 0) {
-          restDeficit = 11 - restHoursVal;
-          restWarning = `<br><span class="warn-badge">⚠️ Ανάπαυση ${restHoursVal.toFixed(2)}h</span>`;
-        }
-      }
-
-      let dayOfWeek = start.getDay();
-      let isWeekend = (dayOfWeek === 0 || dayOfWeek === 6);
-      let rate = (isWeekend || item.isHoliday) ? 18.00 : 9.00;
-      let rowExtraHours = otHours + restDeficit;
-      let rowPay = rowExtraHours * rate;
-
-      grandTotalExtraHours += rowExtraHours;
-      grandTotalPay += rowPay;
-
-      let badge = item.isHoliday ? '<br><span class="holiday-badge">🎉 Αργία</span>' : (isWeekend ? '<br><span class="holiday-badge">📅 Σ/Κ</span>' : '');
+      totalOTSum += Number(item.totalOT);
+      totalPaySum += Number(item.finalAmt);
 
       tbody.innerHTML += `
         <tr class="clickable-row" onclick="openForm(${index})">
-          <td><b>${item.date}</b>${badge}<br><span style="color:#aaa; font-size:0.8rem;">🕒 ${startTimeStr} - ${endTimeStr}</span>${restWarning}</td>
-          <td>${rowExtraHours.toFixed(2)}h</td>
-          <td>€${rowPay.toFixed(2)} <span style="font-size:0.7rem; color:#888;">(${rate}€)</span></td>
+          <td><b>${item.date}</b><br><span style="color:#aaa; font-size:0.8rem;">🕒 ${item.start} - ${item.end}</span></td>
+          <td>Σύνολο Υπερ.: <b>${Number(item.totalOT).toFixed(2)}h</b></td>
+          <td><b>€${Number(item.finalAmt).toFixed(2)}</b></td>
         </tr>`;
     });
 
-    document.getElementById('totalHours').innerText = grandTotalExtraHours.toFixed(2) + ' hrs';
-    document.getElementById('totalPay').innerText = '€' + grandTotalPay.toFixed(2);
+    document.getElementById('totalHoursVal').innerText = totalOTSum.toFixed(2) + ' hrs';
+    document.getElementById('totalPayVal').innerText = '€' + totalPaySum.toFixed(2);
   }
 
   function saveEntry() {
     const editIndex = parseInt(document.getElementById('editIndex').value);
-    const date = document.getElementById('workDate').value;
-    const start = document.getElementById('startTime').value;
-    const end = document.getElementById('endTime').value;
-    const breakMins = parseInt(document.getElementById('breakMins').value);
-    const isHoliday = document.getElementById('isHoliday').checked;
+    const entry = {
+      date: document.getElementById('workDate').value,
+      start: document.getElementById('startTime').value,
+      end: document.getElementById('endTime').value,
+      totalShift: parseFloat(document.getElementById('totalShiftHours').value) || 0,
+      rest: parseFloat(document.getElementById('restHours').value) || 0,
+      normal: parseFloat(document.getElementById('normalHours').value) || 0,
+      overtime: parseFloat(document.getElementById('overtimeHours').value) || 0,
+      totalOT: parseFloat(document.getElementById('totalOvertime').value) || 0,
+      misc: parseFloat(document.getElementById('miscHours').value) || 0,
+      finalAmt: parseFloat(document.getElementById('finalAmount').value) || 0
+    };
 
-    if(!date || !start) return alert('Συμπλήρωσε ημερομηνία και ώρα έναρξης');
-
-    let startISO = new Date(`${date}T${start}`).toISOString();
-    let endISO = null;
-
-    if (end) {
-      let [sH, sM] = start.split(':').map(Number);
-      let [eH, eM] = end.split(':').map(Number);
-      let d1 = new Date(2000, 0, 1, sH, sM);
-      let d2 = new Date(2000, 0, 1, eH, eM);
-      if (d2 <= d1) d2.setDate(d2.getDate() + 1);
-      endISO = new Date(new Date(startISO).getTime() + (d2 - d1)).toISOString();
-    }
+    if(!entry.date) return alert('Συμπλήρωσε ημερομηνία!');
 
     if (editIndex === -1) {
-      shifts.push({ date, startISO, endISO, breakMins, isHoliday });
+      shifts.push(entry);
     } else {
-      shifts[editIndex] = { date, startISO, endISO, breakMins, isHoliday };
+      shifts[editIndex] = entry;
     }
 
     saveAndRender();
@@ -374,62 +274,34 @@
 
   function exportCSV() {
     if(shifts.length === 0) return alert('Δεν υπάρχουν δεδομένα!');
-    
-    const mode = document.getElementById('exportMode').value;
-    const selectedMonth = document.getElementById('exportMonth').value;
 
-    let csv = '\uFEFFΗμερομηνία,Έναρξη,Λήξη,Συνολικές Ώρες,Υπερωρίες,Έλλειψη Ανάπαυσης,Σύνολο Έξτρα,Ωρομίσθιο,Τελικό Ποσό\n';
-    let count = 0;
+    // Επικεφαλίδα παρόμοια με το Excel σου
+    let csv = '\uFEFFΠΕΡΙΟΔΟΣ ΑΝΑΦΟΡΑΣ: Σεπτέμβριος 2026\n';
+    csv += 'Ημερομηνία;Έναρξη;Λήξη;Συνολικές Ώρες Βάρδιας;Ώρες Ανάπαυσης;Κανονικές Ώρες;Υπερωρίες;Σύνολο Υπερωριών;Διάφορα;Τελικό Ποσό/Σύνολο\n';
 
-    shifts.forEach((item, index) => {
-      if (mode === 'month' && !item.date.startsWith(selectedMonth)) return;
+    let totalOTSum = 0;
+    let totalPaySum = 0;
 
-      let start = new Date(item.startISO);
-      let startTimeStr = start.toTimeString().substring(0, 5);
-      let endTimeStr = item.endISO ? new Date(item.endISO).toTimeString().substring(0, 5) : '00:00';
-      let end = item.endISO ? new Date(item.endISO) : null;
-      
-      let totalHours = 0, otHours = 0, restDeficit = 0, rowExtraHours = 0, rate = 9.00, rowPay = 0;
+    shifts.forEach(item => {
+      totalOTSum += Number(item.totalOT);
+      totalPaySum += Number(item.finalAmt);
 
-      if (end) {
-        let diffMins = (end - start) / (1000 * 60) - (item.breakMins || 0);
-        totalHours = diffMins > 0 ? diffMins / 60 : 0;
-        otHours = totalHours > 8 ? (totalHours - 8) : 0;
-
-        if (index > 0 && shifts[index - 1].endISO) {
-          let prevEnd = new Date(shifts[index - 1].endISO);
-          let restHoursVal = (start - prevEnd) / (1000 * 3600);
-          if (restHoursVal < 11 && restHoursVal >= 0) restDeficit = 11 - restHoursVal;
-        }
-
-        let isWeekend = (start.getDay() === 0 || start.getDay() === 6);
-        rate = (isWeekend || item.isHoliday) ? 18.00 : 9.00;
-        rowExtraHours = otHours + restDeficit;
-        rowPay = rowExtraHours * rate;
-      }
-
-      csv += `${item.date},${startTimeStr},${endTimeStr},${totalHours.toFixed(2)},${otHours.toFixed(2)},${restDeficit.toFixed(2)},${rowExtraHours.toFixed(2)},${rate.toFixed(2)},${rowPay.toFixed(2)}\n`;
-      count++;
+      csv += `${item.date};${item.start};${item.end};${item.totalShift.toFixed(2)};${item.rest.toFixed(2)};${item.normal.toFixed(2)};${item.overtime.toFixed(2)};${item.totalOT.toFixed(2)};${item.misc.toFixed(2)};${item.finalAmt.toFixed(2)}\n`;
     });
 
-    if (count === 0) return alert('Δεν υπάρχουν δεδομένα για την επιλεγμένη περίοδο!');
+    // Προσθήκη γραμμών συνόλων κάτω-κάτω στο CSV όπως ζήτησες
+    csv += `\n; ; ; ; ; ; ;ΣΥΝΟΛΟ ΥΠΕΡΩΡΙΩΝ:;${totalOTSum.toFixed(2)}; \n`;
+    csv += `; ; ; ; ; ; ;ΤΕΛΙΚΟ ΠΟΣΟ ΜΗΝΑ:; ;${totalPaySum.toFixed(2)}\n`;
 
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
-    link.download = `ExtraHours_${selectedMonth}.csv`;
+    link.download = `ExtraHours_2026-09_Final.csv`;
     link.click();
   }
 
   function syncGoogleSheets() {
-    alert("Για Google Sheets:\n1. Κάνε εξαγωγή CSV.\n2. Άνοιξε το Google Drive, δημιούργησε νέο Google Sheet.\n3. Πήγαινε Αρχείο -> Εισαγωγή και ανέβασε το αρχείο CSV. Θα ανοίξει τέλεια σε ξεχωριστές στήλες!");
-  }
-
-  function sendHR() {
-    let totalH = document.getElementById('totalHours').innerText;
-    let totalP = document.getElementById('totalPay').innerText;
-    let body = `Καλησπέρα,\n\nΣας αποστέλλω τις έξτρα ώρες εργασίας μου:\nΣύνολο Έξτρα Ωρών: ${totalH}\nΣύνολο Αμοιβής: ${totalP}\n\nΕυχαριστώ.`;
-    window.location.href = `mailto:hr@company.com?subject=Έξτρα Ώρες&body=${encodeURIComponent(body)}`;
+    alert("Για Google Sheets:\n1. Κάνε εξαγωγή CSV.\n2. Άνοιξε το Google Drive, δημιούργησε νέο Google Sheet.\n3. Πήγαινε Αρχείο -> Εισαγωγή και ανέβασε το αρχείο CSV. Θα ανοίξει τέλεια με τις στήλες και τα σύνολα κάτω!");
   }
 
   saveAndRender();
