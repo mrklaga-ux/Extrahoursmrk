@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Extrahoursmrk</title>
   
-  <!-- Χρησιμοποιούμε τη βιβλιοθήκη ExcelJS για σωστή μορφοποίηση στηλών, χρωμάτων και πολλαπλών φύλλων -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
   
@@ -128,9 +127,9 @@
   </div>
 
   <div class="card">
-    <label>Περίοδος Αναφοράς (Μήνας ή Έτος)</label>
+    <label>Περίοδος Αναφοράς (Γράψε Έτος π.χ. 2026 ή Μήνα YYYY-MM)</label>
     <div style="display: flex; gap: 8px;">
-      <input type="month" id="exportMonth" value="2026-09" style="flex: 2; margin-bottom: 0;">
+      <input type="text" id="exportMonth" value="2026-09" style="flex: 2; margin-bottom: 0;" placeholder="π.χ. 2026 ή 2026-09">
       <button class="btn-sec" style="flex: 1; margin-top: 0; padding: 12px 4px; font-size: 0.85rem;" onclick="setExportYearMode()">📅 Όλο το Έτος</button>
     </div>
 
@@ -280,8 +279,8 @@
   }
 
   function setExportYearMode() {
-    let val = document.getElementById('exportMonth').value;
-    let year = val ? val.substring(0, 4) : "2026";
+    let val = document.getElementById('exportMonth').value.trim();
+    let year = val.length >= 4 ? val.substring(0, 4) : "2026";
     document.getElementById('exportMonth').value = year;
   }
 
@@ -384,12 +383,11 @@
     }
   }
 
-  // Εξαγωγή Excel με αυτόματη δημιουργία ξεχωριστών φύλλων (tabs) ανά μήνα όταν επιλέγεται ολόκληρο έτος
   async function exportExcelFile() {
     let processed = processAllShifts(shifts);
     if(processed.length === 0) return alert('Δεν υπάρχουν δεδομένα!');
 
-    let val = document.getElementById('exportMonth').value; // Παίρνει "YYYY-MM" ή "YYYY"
+    let val = document.getElementById('exportMonth').value.trim();
     const workbook = new ExcelJS.Workbook();
 
     let monthNames = {
@@ -401,7 +399,6 @@
     let datasetsToExport = [];
 
     if (val.length === 4) {
-      // Έτος: Ομαδοποίηση δεδομένων ανά μήνα και δημιουργία ξεχωριστού φύλλου για καθέναν
       let yearMonths = [...new Set(processed.filter(item => item.date.startsWith(val)).map(item => item.date.substring(5, 7)))].sort();
       if(yearMonths.length === 0) return alert('Δεν υπάρχουν δεδομένα για το επιλεγμένο έτος!');
       
@@ -411,7 +408,6 @@
         datasetsToExport.push({ sheetName: sheetName, periodTitle: sheetName.toUpperCase(), data: mData });
       });
     } else if (val.length === 7) {
-      // Συγκεκριμένος μήνας
       let filteredData = processed.filter(item => item.date.startsWith(val));
       if(filteredData.length === 0) return alert('Δεν υπάρχουν δεδομένα για τον επιλεγμένο μήνα!');
       let [year, mNum] = val.split('-');
