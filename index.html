@@ -127,9 +127,10 @@
   </div>
 
   <div class="card">
-    <label>Περίοδος Αναφοράς (Γράψε Έτος π.χ. 2026 ή Μήνα YYYY-MM)</label>
+    <label>Επιλογή Περιόδου (Μήνας ή Έτος)</label>
     <div style="display: flex; gap: 8px;">
-      <input type="text" id="exportMonth" value="2026-09" style="flex: 2; margin-bottom: 0;" placeholder="π.χ. 2026 ή 2026-09">
+      <!-- Επαναφορά σε Month Picker για εύκολη επιλογή χωρίς γράψιμο -->
+      <input type="month" id="exportMonth" value="2026-09" style="flex: 2; margin-bottom: 0;">
       <button class="btn-sec" style="flex: 1; margin-top: 0; padding: 12px 4px; font-size: 0.85rem;" onclick="setExportYearMode()">📅 Όλο το Έτος</button>
     </div>
 
@@ -170,10 +171,10 @@
     {date: "2026-09-26", start: "10:00", end: "00:30"}
   ];
 
-  let stored = localStorage.getItem('extrahours_exact_data_v22');
+  let stored = localStorage.getItem('extrahours_exact_data_v23');
   let shifts = stored ? JSON.parse(stored) : defaultShifts;
   if (!stored) {
-    localStorage.setItem('extrahours_exact_data_v22', JSON.stringify(shifts));
+    localStorage.setItem('extrahours_exact_data_v23', JSON.stringify(shifts));
   }
 
   function getDayName(dateStr) {
@@ -279,10 +280,23 @@
   }
 
   function setExportYearMode() {
-    let val = document.getElementById('exportMonth').value.trim();
+    let inputEl = document.getElementById('exportMonth');
+    // Αν υπάρχει ήδη επιλεγμένος μήνας, παίρνουμε το έτος του, αtrimenti 2026
+    let val = inputEl.value;
     let year = val.length >= 4 ? val.substring(0, 4) : "2026";
-    document.getElementById('exportMonth').value = year;
+    
+    // Αλλάζουμε το input σε text προσωρινά για να δείξει σκέτο το έτος (π.χ. "2026")
+    inputEl.type = "text";
+    inputEl.value = year;
   }
+
+  // Αν ο χρήστης ξαναπατήσει το input, το ξαναγυρνάμε σε month αν έγραφε έτος
+  document.getElementById('exportMonth').addEventListener('focus', function() {
+    if(this.type === 'text') {
+      this.type = 'month';
+      this.value = new Date().toISOString().substring(0, 7);
+    }
+  });
 
   function openForm(index = -1) {
     document.getElementById('editIndex').value = index;
@@ -315,7 +329,7 @@
     let processed = processAllShifts(shifts);
     let displayList = [...processed].sort((a, b) => new Date(b.date) - new Date(a.date));
 
-    localStorage.setItem('extrahours_exact_data_v22', JSON.stringify(shifts));
+    localStorage.setItem('extrahours_exact_data_v23', JSON.stringify(shifts));
     
     const tbody = document.getElementById('logsTable');
     tbody.innerHTML = '';
@@ -387,34 +401,40 @@
     let processed = processAllShifts(shifts);
     if(processed.length === 0) return alert('Δεν υπάρχουν δεδομένα!');
 
-    let val = document.getElementById('exportMonth').value.trim();
+    let inputEl = document.getElementById('exportMonth');
+    let val = inputEl.value.trim();
     const workbook = new ExcelJS.Workbook();
 
     let monthNames = {
-      "01": "Ιανουάριος", "02": "Φεβρουάριος", "03": "Μάρτιος", "04": "Απρίλιος",
-      "05": "Μάιος", "06": "Ιούνιος", "07": "Ιούλιος", "08": "Αύγουστος",
-      "09": "Σεπτέμβριος", "10": "Οκτώβριος", "11": "Νοέμβριος", "12": "Δεκέμβριος"
+      "01": "ΙΑΝΟΥΑΡΙΟΣ", "02": "ΦΕΒΡΟΥΑΡΙΟΣ", "03": "ΜΑΡΤΙΟΣ", "04": "ΑΠΡΙΛΙΟΣ",
+      "05": "ΜΑΪΟΣ", "06": "ΙΟΥΝΙΟΣ", "07": "ΙΟΥΛΙΟΣ", "08": "ΑΥΓΟΥΣΤΟΣ",
+      "09": "ΣΕΠΤΕΜΒΡΙΟΣ", "10": "ΟΚΤΩΒΡΙΟΣ", "11": "ΝΟΕΜΒΡΙΟΣ", "12": "ΔΕΚΕΜΒΡΙΟΣ"
     };
 
     let datasetsToExport = [];
 
-    if (val.length === 4) {
+    // Αν ο χρήστης έχει επιλέξει ολόκληρο έτος (π.χ. "2026")
+    if (val.length === 4 && !val.includes('-')) {
       let yearMonths = [...new Set(processed.filter(item => item.date.startsWith(val)).map(item => item.date.substring(5, 7)))].sort();
-      if(yearMonths.length === 0) return alert('Δεν υπάρχουν δεδομένα για το επιλεγμένο έτος!');
+      if(yearMonths.length === 0) return alert('Δεν υπάρχουν δεδομένα για το επιλεγμένο έτος ' + val + '!');
       
       yearMonths.forEach(mNum => {
         let mData = processed.filter(item => item.date.startsWith(val + '-' + mNum));
-        let sheetName = (monthNames[mNum] || mNum) + " " + val;
-        datasetsToExport.push({ sheetName: sheetName, periodTitle: sheetName.toUpperCase(), data: mData });
+        let mText = monthNames[mNum] || mNum;
+        let sheetName = `${mText} ${val}`;
+        datasetsToExport.push({ sheetName: sheetName, periodTitle: `${mText} ${val}`, data: mData });
       });
-    } else if (val.length === 7) {
+    } 
+    // Αν έχει επιλέξει μήνα (π.χ. "2026-09")
+    else if (val.length === 7 && val.includes('-')) {
       let filteredData = processed.filter(item => item.date.startsWith(val));
       if(filteredData.length === 0) return alert('Δεν υπάρχουν δεδομένα για τον επιλεγμένο μήνα!');
       let [year, mNum] = val.split('-');
-      let sheetName = (monthNames[mNum] || mNum) + " " + year;
-      datasetsToExport.push({ sheetName: sheetName, periodTitle: sheetName.toUpperCase(), data: filteredData });
+      let mText = monthNames[mNum] || mNum;
+      let sheetName = `${mText} ${year}`;
+      datasetsToExport.push({ sheetName: sheetName, periodTitle: `${mText} ${year}`, data: filteredData });
     } else {
-      datasetsToExport.push({ sheetName: "Σύνολο", periodTitle: "ΣΥΝΟΛΟ ΔΕΔΟΜΕΝΩΝ", data: processed });
+      datasetsToExport.push({ sheetName: "ΣΥΝΟΛΟ", periodTitle: "ΣΥΝΟΛΟ ΔΕΔΟΜΕΝΩΝ", data: processed });
     }
 
     datasetsToExport.forEach(ds => {
