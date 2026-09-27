@@ -128,8 +128,11 @@
   </div>
 
   <div class="card">
-    <label>Μήνας Αναφοράς</label>
-    <input type="month" id="exportMonth" value="2026-09">
+    <label>Περίοδος Αναφοράς (Μήνας ή Έτος)</label>
+    <div style="display: flex; gap: 8px;">
+      <input type="month" id="exportMonth" value="2026-09" style="flex: 2; margin-bottom: 0;">
+      <button class="btn-sec" style="flex: 1; margin-top: 0; padding: 12px 4px; font-size: 0.85rem;" onclick="setExportYearMode()">📅 Όλο το Έτος</button>
+    </div>
 
     <button class="btn-sec" onclick="exportExcelFile()">📊 Εξαγωγή σε Αρχείο Excel (.xlsx)</button>
     <button class="btn-sheets" onclick="syncGoogleSheets()">🟢 Οδηγίες για Google Sheets</button>
@@ -276,6 +279,12 @@
     card.style.display = card.style.display === 'block' ? 'none' : 'block';
   }
 
+  function setExportYearMode() {
+    let val = document.getElementById('exportMonth').value;
+    let year = val ? val.substring(0, 4) : "2026";
+    document.getElementById('exportMonth').value = year;
+  }
+
   function openForm(index = -1) {
     document.getElementById('editIndex').value = index;
     const deleteBtn = document.getElementById('deleteBtn');
@@ -319,13 +328,16 @@
       totalPaySum += Number(item.finalAmt);
 
       let weekendLabel = item.isWeekend ? ` <span style="color:#ffeb3b; font-size:0.75rem;">(${item.dayName} 18€)</span>` : ` <span style="color:#aaa; font-size:0.75rem;">(${item.dayName})</span>`;
+      
+      // Επαναφορά εμφάνισης υπερωριών στις καθημερινές (ή γενικά υπερωριών) μαζί με τις ώρες ανάπαυσης
+      let overtimeTag = (!item.isWeekend && item.overtimeHours > 0) ? ` <span class="badge-red">+${item.overtimeHours.toFixed(1)}h υπερωρία</span>` : '';
       let extraTag = item.extraRestPay > 0 ? ` <span class="badge-red" title="Ανάπαυση < 11h">⚠️ +${item.restHoursDeficit.toFixed(1)}h extra (€${item.extraRestPay.toFixed(2)})</span>` : '';
 
       let origIndex = shifts.findIndex(s => s.date === item.date && s.start === item.start && s.end === item.end);
 
       tbody.innerHTML += `
         <tr class="clickable-row" onclick="openForm(${origIndex})">
-          <td><b>${item.date}</b>${weekendLabel}${extraTag}<br><span style="color:#aaa; font-size:0.8rem;">🕒 ${item.start} - ${item.end}</span></td>
+          <td><b>${item.date}</b>${weekendLabel}${overtimeTag}${extraTag}<br><span style="color:#aaa; font-size:0.8rem;">🕒 ${item.start} - ${item.end}</span></td>
           <td>Ώρες: <b>${Number(item.hours).toFixed(2)}h</b></td>
           <td><b>€${Number(item.finalAmt).toFixed(2)}</b></td>
         </tr>`;
@@ -373,29 +385,40 @@
     }
   }
 
-  // Εξαγωγή Excel με τίτλο Μήνα, σωστά πλάτη στηλών και ωραία χρώματα
   async function exportExcelFile() {
     let processed = processAllShifts(shifts);
     if(processed.length === 0) return alert('Δεν υπάρχουν δεδομένα!');
 
-    let monthVal = document.getElementById('exportMonth').value;
+    let val = document.getElementById('exportMonth').value;
+    let filteredData = processed;
+    let periodTitle = "";
+
     let monthNames = {
       "01": "Ιανουάριος", "02": "Φεβρουάριος", "03": "Μάρτιος", "04": "Απρίλιος",
       "05": "Μάιος", "06": "Ιούνιος", "07": "Ιούλιος", "08": "Αύγουστος",
       "09": "Σεπτέμβριος", "10": "Οκτώβριος", "11": "Νοέμβριος", "12": "Δεκέμβριος"
     };
-    let [year, mNum] = monthVal.split('-');
-    let monthTitle = (monthNames[mNum] || mNum) + " " + year;
+
+    if (val.length === 4) {
+      filteredData = processed.filter(item => item.date.startsWith(val));
+      periodTitle = `ΟΛΟΚΛΗΡΟ ΤΟ ΕΤΟΣ ${val}`;
+    } else if (val.length === 7) {
+      let [year, mNum] = val.split('-');
+      filteredData = processed.filter(item => item.date.startsWith(val));
+      periodTitle = ((monthNames[mNum] || mNum) + " " + year).toUpperCase();
+    } else {
+      periodTitle = "ΣΥΝΟΛΟ ΔΕΔΟΜΕΝΩΝ";
+    }
+
+    if(filteredData.length === 0) return alert('Δεν υπάρχουν δεδομένα για την επιλεγμένη περίοδο!');
 
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet('Βάρδιες');
 
-    // Γραμμή 1: Τίτλος Μήνα στην κορυφή
-    worksheet.addRow([`ΜΗΝΑΣ ΑΝΑΦΟΡΑΣ: ${monthTitle.toUpperCase()}`]);
+    worksheet.addRow([`ΠΕΡΙΟΔΟΣ ΑΝΑΦΟΡΑΣ: ${periodTitle}`]);
     worksheet.getRow(1).font = { bold: true, size: 14, color: { argb: 'FF004D40' } };
-    worksheet.addRow([]); // Κενή γραμμή
+    worksheet.addRow();
 
-    // Γραμμή 3: Επικεφαλίδες στηλών
     const headerRow = worksheet.addRow([
       'Ημερομηνία & Ημέρα', 
       'Έναρξη', 
@@ -407,18 +430,16 @@
       'Συνολικό Ποσό'
     ]);
 
-    // Στιλιζάρισμα επικεφαλίδων (Σκούρο φόντο, λευκά γράμματα, bold)
     headerRow.font = { bold: true, color: { argb: 'FFFFFFFF' } };
     headerRow.eachCell((cell) => {
       cell.fill = {
         type: 'pattern',
         pattern: 'solid',
-        fgColor: { argb: 'FF263238' } // Σκούρο γκρι/μπλε
+        fgColor: { argb: 'FF263238' }
       };
       cell.alignment = { vertical: 'middle', horizontal: 'center' };
     });
 
-    // Ορισμός πλάτους στηλών για να μην κόβεται τίποτα
     worksheet.columns = [
       { key: 'date', width: 26 },
       { key: 'start', width: 12 },
@@ -436,7 +457,7 @@
     let totalRestPaySum = 0;
     let totalPaySum = 0;
 
-    processed.forEach(item => {
+    filteredData.forEach(item => {
       totalHoursSum += Number(item.hours);
       totalOvertimeHoursSum += Number(item.overtimeHours);
       totalRestHoursSum += Number(item.restHoursDeficit);
@@ -455,20 +476,18 @@
         Number(item.finalAmt.toFixed(2))
       ]);
 
-      // Αν είναι Σαββατοκύριακο, βάλε του ένα απαλό ροζ/κόκκινο φόντο για να ξεχωρίζει
       if (item.isWeekend) {
         row.eachCell((cell) => {
           cell.fill = {
             type: 'pattern',
             pattern: 'solid',
-            fgColor: { argb: 'FFFFEBEE' } // Απαλό κόκκινο/ροζ για Σαβ/Κυρ
+            fgColor: { argb: 'FFFFEBEE' }
           };
           cell.font = { bold: true, color: { argb: 'FF9C0006' } };
         });
       }
     });
 
-    // Κενή γραμμή και γραμμή Συνόλων
     worksheet.addRow({});
     const totalsRow = worksheet.addRow([
       'ΣΥΝΟΛΑ:',
@@ -481,20 +500,18 @@
       Number(totalPaySum.toFixed(2))
     ]);
 
-    // Στιλιζάρισμα γραμμής συνόλων
     totalsRow.font = { bold: true, size: 11 };
     totalsRow.eachCell((cell) => {
       cell.fill = {
         type: 'pattern',
         pattern: 'solid',
-        fgColor: { argb: 'FFECEFF1' } // Απαλό γκρι φόντο στα σύνολα
+        fgColor: { argb: 'FFECEFF1' }
       };
     });
 
-    let monthFilename = (monthNames[mNum] || mNum) + "_" + year;
     const buffer = await workbook.xlsx.writeBuffer();
     const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-    saveAs(blob, `ExtraHours_${monthFilename}.xlsx`);
+    saveAs(blob, `ExtraHours_${val}.xlsx`);
   }
 
   function syncGoogleSheets() {
@@ -538,4 +555,3 @@
 </script>
 </body>
 </html>
- 
