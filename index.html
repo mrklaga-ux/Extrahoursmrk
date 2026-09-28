@@ -318,17 +318,16 @@
       totalHoursSum += Number(item.hours);
       totalPaySum += Number(item.finalAmt);
 
-      let weekendLabel = item.isWeekend ? ` <span style="color:#ffeb3b; font-size:0.75rem;">(\( {item.dayName} 18€)</span>` : ` <span style="color:#aaa; font-size:0.75rem;">( \){item.dayName})</span>`;
-      let extraTag = item.extraRestPay > 0 ? ` <span class="badge-red" title="Ανάπαυση < 11h">⚠️ +\( {item.restHoursDeficit.toFixed(1)}h extra (€ \){item.extraRestPay.toFixed(2)})</span>` : '';
+      let weekendLabel = item.isWeekend ? ' <span style="color:#ffeb3b; font-size:0.75rem;">(' + item.dayName + ' 18€)</span>' : ' <span style="color:#aaa; font-size:0.75rem;">(' + item.dayName + ')</span>';
+      let extraTag = item.extraRestPay > 0 ? ' <span class="badge-red" title="Ανάπαυση < 11h">⚠️ +' + item.restHoursDeficit.toFixed(1) + 'h extra (€' + item.extraRestPay.toFixed(2) + ')</span>' : '';
 
       let origIndex = shifts.findIndex(s => s.date === item.date && s.start === item.start && s.end === item.end);
 
-      tbody.innerHTML += `
-        <tr class="clickable-row" onclick="openForm(${origIndex})">
-          <td><b>\( {item.date}</b> \){weekendLabel}${extraTag}<br><span style="color:#aaa; font-size:0.8rem;">🕒 ${item.start} - ${item.end}</span></td>
-          <td>Ώρες: <b>${Number(item.hours).toFixed(2)}h</b></td>
-          <td><b>€${Number(item.finalAmt).toFixed(2)}</b></td>
-        </tr>`;
+      tbody.innerHTML += '<tr class="clickable-row" onclick="openForm(' + origIndex + ')">' +
+        '<td><b>' + item.date + '</b>' + weekendLabel + extraTag + '<br><span style="color:#aaa; font-size:0.8rem;">🕒 ' + item.start + ' - ' + item.end + '</span></td>' +
+        '<td>Ώρες: <b>' + Number(item.hours).toFixed(2) + 'h</b></td>' +
+        '<td><b>€' + Number(item.finalAmt).toFixed(2) + '</b></td>' +
+        '</tr>';
     });
 
     // Στρογγυλοποίηση τελικού ποσού προς τα κάτω στο πλησιέστερο 5
@@ -392,7 +391,7 @@
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet('Βάρδιες');
 
-    worksheet.addRow([`ΜΗΝΑΣ ΑΝΑΦΟΡΑΣ: ${monthTitle.toUpperCase()}`]);
+    worksheet.addRow(['ΜΗΝΑΣ ΑΝΑΦΟΡΑΣ: ' + monthTitle.toUpperCase()]);
     worksheet.getRow(1).font = { bold: true, size: 14, color: { argb: 'FF004D40' } };
     worksheet.addRow();
 
@@ -441,7 +440,7 @@
       totalRestPaySum += Number(item.extraRestPay);
       totalPaySum += Number(item.finalAmt);
       
-      let dateWithDay = `\( {item.date} ( \){item.dayName})`;
+      let dateWithDay = item.date + ' (' + item.dayName + ')';
       let row = worksheet.addRow([
         dateWithDay,
         item.start,
@@ -492,7 +491,7 @@
     let monthFilename = (monthNames[mNum] || mNum) + "_" + year;
     const buffer = await workbook.xlsx.writeBuffer();
     const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-    saveAs(blob, `ExtraHours_${monthFilename}.xlsx`);
+    saveAs(blob, 'ExtraHours_' + monthFilename + '.xlsx');
   }
 
   function syncGoogleSheets() {
