@@ -168,10 +168,10 @@
     {date: "2026-09-26", start: "10:00", end: "00:30"}
   ];
 
-  let stored = localStorage.getItem('extrahours_exact_data_v24');
+  let stored = localStorage.getItem('extrahours_exact_data_v23');
   let shifts = stored ? JSON.parse(stored) : defaultShifts;
   if (!stored) {
-    localStorage.setItem('extrahours_exact_data_v24', JSON.stringify(shifts));
+    localStorage.setItem('extrahours_exact_data_v23', JSON.stringify(shifts));
   }
 
   function getDayName(dateStr) {
@@ -212,7 +212,7 @@
       if (weekend) {
         baseAmount = hours * 18.0;
       } else {
-        baseAmount = overtimeHours * 9.0;
+        baseAmount = overtimeHours * 9.0; // Διορθωμένο σταθερά στα 9.0€ για τις επιπλέον ώρες καθημερινών
       }
 
       let extraRestPay = 0;
@@ -242,10 +242,7 @@
         }
       }
 
-      // Εφαρμογή στρογγυλοποίησης προς τα κάτω στο πλησιέστερο πολλαπλάσιο του 5
-      let rawTotal = baseAmount + extraRestPay;
-      let totalAmt = Math.floor(rawTotal / 5) * 5;
-
+      let totalAmt = baseAmount + extraRestPay;
       return {
         ...item,
         dayName: dayName,
@@ -268,8 +265,7 @@
     let hours = calculateShiftHours(start, end);
     let weekend = isWeekend(dateStr);
     
-    let rawAmt = weekend ? (hours * 18.0) : (Math.max(0, hours - 8) * 9.0);
-    let amt = Math.floor(rawAmt / 5) * 5;
+    let amt = weekend ? (hours * 18.0) : (Math.max(0, hours - 8) * 9.0);
     
     document.getElementById('totalShiftHours').value = hours.toFixed(2);
     document.getElementById('finalAmount').value = amt.toFixed(2);
@@ -311,7 +307,7 @@
     let processed = processAllShifts(shifts);
     let displayList = [...processed].sort((a, b) => new Date(b.date) - new Date(a.date));
 
-    localStorage.setItem('extrahours_exact_data_v24', JSON.stringify(shifts));
+    localStorage.setItem('extrahours_exact_data_v23', JSON.stringify(shifts));
     
     const tbody = document.getElementById('logsTable');
     tbody.innerHTML = '';
