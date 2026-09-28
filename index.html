@@ -3,157 +3,206 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Extrahoursmrk</title>
-  
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+  <title>Work Hours</title>
   
   <style>
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-      background-color: #121212;
-      color: #ffffff;
+      background-color: #f4f6f9;
+      color: #333;
       padding: 12px;
       margin: 0;
+      padding-bottom: 75px;
     }
-    h1 { color: #00e676; text-align: center; font-size: 1.6rem; margin: 12px 0; }
+    .top-banner {
+      background: #1976d2;
+      color: white;
+      padding: 16px;
+      border-radius: 12px;
+      text-align: center;
+      margin-bottom: 14px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    }
+    .top-banner h2 { margin: 0 0 6px 0; font-size: 1.2rem; font-weight: 500; }
+    .top-banner .total-amount { font-size: 2.2rem; font-weight: bold; }
+    .top-banner .total-hours { font-size: 0.95rem; opacity: 0.9; margin-top: 4px; }
+
     .card {
-      background: #1e1e1e;
+      background: #ffffff;
       padding: 16px;
       border-radius: 12px;
       margin-bottom: 14px;
-      border: 1px solid #333;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+      border: 1px solid #e0e0e0;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
     }
-    label { display: block; margin: 10px 0 4px; color: #b0b0b0; font-size: 0.9rem; font-weight: 500; }
-    input, select, button {
+    .card h3 { margin-top: 0; color: #1976d2; font-size: 1.1rem; }
+    
+    label { display: block; margin: 10px 0 4px; color: #555; font-size: 0.9rem; font-weight: 500; }
+    input, select {
       width: 100%;
       padding: 12px;
       margin-bottom: 8px;
       border-radius: 8px;
-      border: 1px solid #444;
-      background: #2a2a2a;
-      color: #fff;
+      border: 1px solid #ccc;
+      background: #fff;
+      color: #333;
       font-size: 1rem;
       box-sizing: border-box;
     }
-    button.btn-open {
-      background: #00e676;
-      color: #000;
-      font-weight: bold;
-      font-size: 1.2rem;
-      padding: 16px;
+    
+    .btn {
+      width: 100%;
+      padding: 14px;
+      border-radius: 8px;
       border: none;
-      margin-bottom: 14px;
-      border-radius: 10px;
-      box-shadow: 0 4px 12px rgba(0, 230, 118, 0.3);
-    }
-    button.btn-save { background: #00e676; color: #000; font-weight: bold; border: none; font-size: 1.1rem; margin-top: 10px; }
-    button.btn-delete { background: #d32f2f; color: #fff; font-weight: bold; border: none; font-size: 1.1rem; margin-top: 6px; display: none; }
-    button.btn-cancel { background: #444; color: #fff; border: none; margin-top: 6px; }
-    button.btn-sec { background: #2c2c2c; color: #fff; border: 1px solid #555; margin-top: 8px; font-weight: 600; }
-    button.btn-sheets { background: #107c41; color: #fff; border: none; margin-top: 8px; font-weight: 600; }
-    button.btn-backup { background: #1976d2; color: #fff; border: none; margin-top: 8px; font-weight: 600; }
-    button.btn-restore { background: #f57c00; color: #fff; border: none; margin-top: 8px; font-weight: 600; }
-    button.btn-toggle-settings { background: #333; color: #ccc; border: 1px solid #555; font-size: 0.9rem; padding: 10px; margin-bottom: 14px; }
-    
-    .val-box { background: #252525; padding: 12px; border-radius: 8px; text-align: center; margin-bottom: 10px; border: 1px solid #383838; }
-    .val { font-size: 1.6rem; font-weight: bold; color: #00e676; margin-top: 4px; }
-    
-    table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.85rem; }
-    th, td { padding: 12px 8px; border-bottom: 1px solid #333; text-align: left; }
-    th { color: #aaa; font-weight: 600; }
-    
-    tr.clickable-row {
+      font-size: 1rem;
+      font-weight: bold;
       cursor: pointer;
-      transition: background-color 0.15s ease;
+      margin-bottom: 8px;
+      box-sizing: border-box;
     }
-    tr.clickable-row:active, tr.clickable-row:hover {
-      background-color: #2c2c2c;
+    .btn-primary { background: #1976d2; color: #fff; }
+    .btn-success { background: #2e7d32; color: #fff; }
+    .btn-danger { background: #d32f2f; color: #fff; }
+    .btn-secondary { background: #e0e0e0; color: #333; }
+    .btn-warning { background: #f57c00; color: #fff; }
+
+    /* Bottom Navigation Bar */
+    .bottom-nav {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      background: #ffffff;
+      border-top: 1px solid #ddd;
+      display: flex;
+      justify-content: space-around;
+      padding: 8px 0;
+      box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
+      z-index: 1000;
     }
-    .badge-red { color: #ff5252; font-weight: bold; }
-    #formCard, #settingsCard { display: none; }
+    .nav-item {
+      text-align: center;
+      color: #666;
+      font-size: 0.75rem;
+      cursor: pointer;
+      flex: 1;
+      text-decoration: none;
+    }
+    .nav-item.active { color: #1976d2; font-weight: bold; }
+    .nav-item span.icon { font-size: 1.4rem; display: block; margin-bottom: 2px; }
+
+    /* Views */
+    .view-section { display: none; }
+    .view-section.active { display: block; }
+
+    /* Table */
+    table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.85rem; }
+    th, td { padding: 10px 6px; border-bottom: 1px solid #eee; text-align: left; }
+    th { color: #666; font-weight: 600; background: #f9f9f9; }
+    tr.clickable-row { cursor: pointer; }
+    tr.clickable-row:hover { background: #f1f5f9; }
+
+    .badge-red {
+      background: #ffebee;
+      color: #c62828;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-weight: bold;
+      font-size: 0.75rem;
+      display: inline-block;
+      margin-top: 2px;
+    }
   </style>
 </head>
 <body>
 
-  <h1>Extrahoursmrk</h1>
-
-  <button class="btn-open" onclick="openForm()">➕ Νέα Καταχώρηση Βάρδιας</button>
-
-  <button class="btn-toggle-settings" onclick="toggleSettings()">⚙️ Ρυθμίσεις & Ασφάλεια Δεδομένων (Backup)</button>
-
-  <div class="card" id="settingsCard" style="border-color: #1976d2;">
-    <h3 style="margin-top:0; color:#1976d2; font-size: 1.1rem;">Διαχείριση Backup & Επαναφοράς</h3>
-    <button class="btn-backup" onclick="exportBackupJSON()">📤 Εξαγωγή Backup</button>
-    <button class="btn-restore" onclick="triggerRestoreJSON()">📥 Εισαγωγή Backup</button>
-    <input type="file" id="importFile" style="display:none" accept=".json" onchange="importBackupJSON(event)">
+  <!-- Top Summary Banner -->
+  <div class="top-banner">
+    <h2>Work Hours</h2>
+    <div class="total-amount" id="totalPayVal">€0.00</div>
+    <div class="total-hours" id="totalHoursVal">Σύνολο: 0.00 ώρες</div>
   </div>
 
-  <div class="card" id="formCard">
-    <h3 id="formTitle" style="margin-top:0; color:#00e676;">Καταχώρηση Βάρδιας</h3>
-    
-    <input type="hidden" id="editIndex" value="-1">
-
-    <label>Ημερομηνία</label>
-    <input type="date" id="workDate" onchange="livePreview()">
-
-    <label>Ώρα Έναρξης</label>
-    <input type="time" id="startTime" value="10:00" onchange="livePreview()">
-
-    <label>Ώρα Λήξης</label>
-    <input type="time" id="endTime" value="18:00" onchange="livePreview()">
-
-    <label>Συνολικές Ώρες Βάρδιας</label>
-    <input type="number" step="0.25" id="totalShiftHours" value="8.00" readonly>
-
-    <label>Συνολικό Ποσό (€)</label>
-    <input type="number" step="0.01" id="finalAmount" value="0.00" readonly>
-
-    <button class="btn-save" onclick="saveEntry()">💾 Αποθήκευση</button>
-    <button class="btn-delete" id="deleteBtn" onclick="deleteCurrentEntry()">🗑️ Διαγραφή Βάρδιας</button>
-    <button class="btn-cancel" onclick="closeForm()">Ακύρωση</button>
-  </div>
-
-  <div class="card">
-    <div class="val-box">
-      <label>Σύνολο Ωρών Μήνα</label>
-      <div class="val" id="totalHoursVal">0.00 hrs</div>
+  <!-- VIEW 1: ARCHIKI (HOME) -->
+  <div id="view-home" class="view-section active">
+    <div class="card">
+      <h3>Γρήγορες ενέργειες</h3>
+      <button class="btn btn-primary" onclick="switchView('new')">+ Νέα καταχώρηση</button>
+      <button class="btn btn-secondary" onclick="switchView('list')">📋 Λίστα καταχωρήσεων</button>
+      <button class="btn btn-warning" onclick="resetDefaultSeptember()">🔄 Επαναφορά Σεπτεμβρίου</button>
     </div>
-    <div class="val-box">
-      <label>Συνολικό Ποσό Μήνα</label>
-      <div class="val" id="totalPayVal">€0.00</div>
+
+    <div class="card">
+      <h3>Backup & Εξαγωγή</h3>
+      <label>Μήνας Αναφοράς CSV</label>
+      <input type="month" id="exportMonth" value="2026-09">
+      <button class="btn btn-success" onclick="exportCSVFile()">📊 Εξαγωγή CSV (για Excel/HR)</button>
+      <button class="btn btn-primary" onclick="exportBackupJSON()">📥 Κατέβασμα Backup</button>
+      <button class="btn btn-secondary" onclick="document.getElementById('importFile').click()">📤 Επαναφορά από Backup</button>
+      <input type="file" id="importFile" style="display:none" accept=".json" onchange="importBackupJSON(event)">
     </div>
   </div>
 
-  <div class="card">
-    <label>Επιλογή Περιόδου (Μήνας ή Έτος)</label>
-    <div style="display: flex; gap: 8px;">
-      <!-- Επαναφορά σε Month Picker για εύκολη επιλογή χωρίς γράψιμο -->
-      <input type="month" id="exportMonth" value="2026-09" style="flex: 2; margin-bottom: 0;">
-      <button class="btn-sec" style="flex: 1; margin-top: 0; padding: 12px 4px; font-size: 0.85rem;" onclick="setExportYearMode()">📅 Όλο το Έτος</button>
-    </div>
+  <!-- VIEW 2: NEW / EDIT FORM -->
+  <div id="view-new" class="view-section">
+    <div class="card">
+      <h3 id="formTitle">Νέα καταχώρηση βάρδιας</h3>
+      <input type="hidden" id="editIndex" value="-1">
 
-    <button class="btn-sec" onclick="exportExcelFile()">📊 Εξαγωγή σε Αρχείο Excel (.xlsx)</button>
-    <button class="btn-sheets" onclick="syncGoogleSheets()">🟢 Οδηγίες για Google Sheets</button>
+      <label>Ημερομηνία</label>
+      <input type="date" id="workDate" onchange="livePreview()">
+
+      <label>Ώρα Έναρξης</label>
+      <input type="time" id="startTime" value="10:00" onchange="livePreview()">
+
+      <label>Ώρα Λήξης</label>
+      <input type="time" id="endTime" value="18:00" onchange="livePreview()">
+
+      <label>Συνολικές Ώρες</label>
+      <input type="text" id="totalShiftHours" value="8.00" readonly style="background:#eee;">
+
+      <label>Ποσό (€)</label>
+      <input type="text" id="finalAmount" value="0.00" readonly style="background:#eee;">
+
+      <button class="btn btn-success" onclick="saveEntry()">💾 Αποθήκευση</button>
+      <button class="btn btn-danger" id="deleteBtn" onclick="deleteCurrentEntry()" style="display:none;">🗑️ Διαγραφή</button>
+      <button class="btn btn-secondary" onclick="switchView('list')">Ακύρωση</button>
+    </div>
   </div>
 
-  <div class="card">
-    <h3 style="margin-top:0;">Ιστορικό Βαρδιών</h3>
-    <table>
-      <thead>
-        <tr>
-          <th>Ημερομηνία</th>
-          <th>Ώρες</th>
-          <th>Συνολικό Ποσό</th>
-        </tr>
-      </thead>
-      <tbody id="logsTable"></tbody>
-    </table>
+  <!-- VIEW 3: LIST -->
+  <div id="view-list" class="view-section">
+    <div class="card">
+      <h3>Ιστορικό Βαρδιών (Κάνε κλικ για διόρθωση)</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>Ημερομηνία</th>
+            <th>Ώρες</th>
+            <th>Ποσό</th>
+          </tr>
+        </thead>
+        <tbody id="logsTable"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Bottom Navigation Bar -->
+  <div class="bottom-nav">
+    <div class="nav-item active" id="nav-home" onclick="switchView('home')">
+      <span class="icon">🏠</span>Αρχική
+    </div>
+    <div class="nav-item" id="nav-new" onclick="switchView('new')">
+      <span class="icon">➕</span>Νέα
+    </div>
+    <div class="nav-item" id="nav-list" onclick="switchView('list')">
+      <span class="icon">📋</span>Λίστα
+    </div>
   </div>
 
 <script>
-  let defaultShifts = [
+  const defaultShifts = [
     {date: "2026-09-01", start: "09:15", end: "20:30"},
     {date: "2026-09-02", start: "09:30", end: "01:30"},
     {date: "2026-09-03", start: "09:30", end: "00:30"},
@@ -168,19 +217,62 @@
     {date: "2026-09-23", start: "09:30", end: "00:30"},
     {date: "2026-09-24", start: "09:00", end: "00:00"},
     {date: "2026-09-25", start: "10:00", end: "23:45"},
-    {date: "2026-09-26", start: "10:00", end: "00:30"}
+    {date: "2026-09-26", start: "10:00", end: "02:45"},
+    {date: "2026-09-27", start: "11:00", end: "19:30"}
   ];
 
-  let stored = localStorage.getItem('extrahours_exact_data_v23');
-  let shifts = stored ? JSON.parse(stored) : defaultShifts;
-  if (!stored) {
-    localStorage.setItem('extrahours_exact_data_v23', JSON.stringify(shifts));
+  const STORAGE_KEY = 'extrahours_offline_v41';
+  let shifts = [];
+
+  try {
+    let stored = localStorage.getItem(STORAGE_KEY);
+    if (stored) {
+      let parsed = JSON.parse(stored);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        shifts = parsed;
+      }
+    }
+  } catch(e) {}
+
+  if (shifts.length === 0) {
+    shifts = [...defaultShifts];
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(shifts));
+    } catch(e) {}
+  }
+
+  function resetDefaultSeptember() {
+    if (confirm('Θέλεις να επαναφερθούν οι βάρδιες του Σεπτεμβρίου;')) {
+      shifts = [...defaultShifts];
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(shifts));
+      saveAndRender();
+      alert('Επαναφέρθηκαν οι βάρδιες!');
+    }
+  }
+
+  function switchView(viewName) {
+    document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+
+    if (viewName === 'home') {
+      document.getElementById('view-home').classList.add('active');
+      document.getElementById('nav-home').classList.add('active');
+    } else if (viewName === 'new') {
+      document.getElementById('view-new').classList.add('active');
+      document.getElementById('nav-new').classList.add('active');
+      openForm(-1);
+    } else if (viewName === 'list') {
+      document.getElementById('view-list').classList.add('active');
+      document.getElementById('nav-list').classList.add('active');
+      saveAndRender();
+    }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
   function getDayName(dateStr) {
     let days = ["Κυριακή", "Δευτέρα", "Τρίτη", "Τετάρτη", "Πέμπτη", "Παρασκευή", "Σάββατο"];
     let d = new Date(dateStr);
-    return days[d.getDay()];
+    return days[d.getDay()] || "";
   }
 
   function isWeekend(dateStr) {
@@ -190,8 +282,9 @@
   }
 
   function timeToMinutes(timeStr) {
-    let [h, m] = timeStr.split(':').map(Number);
-    return h * 60 + m;
+    if (!timeStr) return 0;
+    let parts = timeStr.split(':');
+    return parseInt(parts[0] || 0) * 60 + parseInt(parts[1] || 0);
   }
 
   function calculateShiftHours(start, end) {
@@ -204,7 +297,7 @@
   function processAllShifts(arr) {
     let sorted = [...arr].sort((a, b) => new Date(a.date) - new Date(b.date));
     
-    let results = sorted.map((item, idx) => {
+    return sorted.map((item, idx) => {
       let hours = calculateShiftHours(item.start, item.end);
       let weekend = isWeekend(item.date);
       let dayName = getDayName(item.date);
@@ -239,7 +332,8 @@
 
           if (restHours < 11) {
             restHoursDeficit = 11 - restHours;
-            let restRate = weekend ? 18.0 : 9.0;
+            // FIXED: matched exactly to Excel formula rate (9.0 fixed for rest deficit)
+            let restRate = 9.0;
             extraRestPay = restHoursDeficit * restRate; 
           }
         }
@@ -257,8 +351,6 @@
         isWeekend: weekend
       };
     });
-
-    return results;
   }
 
   function livePreview() {
@@ -268,71 +360,52 @@
     let hours = calculateShiftHours(start, end);
     let weekend = isWeekend(dateStr);
     
-    let amt = weekend ? (hours * 18.0) : (Math.max(0, hours - 8) * 9.0);
+    let baseAmt = weekend ? (hours * 18.0) : (Math.max(0, hours - 8) * 9.0);
+    let amt = baseAmt; 
     
     document.getElementById('totalShiftHours').value = hours.toFixed(2);
     document.getElementById('finalAmount').value = amt.toFixed(2);
   }
 
-  function toggleSettings() {
-    const card = document.getElementById('settingsCard');
-    card.style.display = card.style.display === 'block' ? 'none' : 'block';
-  }
-
-  function setExportYearMode() {
-    let inputEl = document.getElementById('exportMonth');
-    // Αν υπάρχει ήδη επιλεγμένος μήνας, παίρνουμε το έτος του, αtrimenti 2026
-    let val = inputEl.value;
-    let year = val.length >= 4 ? val.substring(0, 4) : "2026";
-    
-    // Αλλάζουμε το input σε text προσωρινά για να δείξει σκέτο το έτος (π.χ. "2026")
-    inputEl.type = "text";
-    inputEl.value = year;
-  }
-
-  // Αν ο χρήστης ξαναπατήσει το input, το ξαναγυρνάμε σε month αν έγραφε έτος
-  document.getElementById('exportMonth').addEventListener('focus', function() {
-    if(this.type === 'text') {
-      this.type = 'month';
-      this.value = new Date().toISOString().substring(0, 7);
-    }
-  });
-
   function openForm(index = -1) {
     document.getElementById('editIndex').value = index;
     const deleteBtn = document.getElementById('deleteBtn');
-    let processed = processAllShifts(shifts);
 
     if (index === -1) {
-      document.getElementById('formTitle').innerText = 'Νέα Καταχώρηση Βάρδιας';
-      let todayStr = new Date().toISOString().substring(0, 10);
-      document.getElementById('workDate').value = todayStr;
+      document.getElementById('formTitle').innerText = 'Νέα καταχώρηση βάρδιας';
+      document.getElementById('workDate').value = "2026-09-28";
       document.getElementById('startTime').value = '10:00';
       document.getElementById('endTime').value = '18:00';
       deleteBtn.style.display = 'none';
     } else {
       document.getElementById('formTitle').innerText = 'Επεξεργασία Βάρδιας';
-      let item = processed[index];
-      document.getElementById('workDate').value = item.date;
-      document.getElementById('startTime').value = item.start;
-      document.getElementById('endTime').value = item.end;
+      let item = shifts[index];
+      if (item) {
+        document.getElementById('workDate').value = item.date;
+        document.getElementById('startTime').value = item.start;
+        document.getElementById('endTime').value = item.end;
+      }
       deleteBtn.style.display = 'block';
     }
     livePreview();
-    document.getElementById('formCard').style.display = 'block';
-    window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
-  function closeForm() { document.getElementById('formCard').style.display = 'none'; }
-
   function saveAndRender() {
+    if (!shifts || shifts.length === 0) {
+      shifts = [...defaultShifts];
+    }
+
     let processed = processAllShifts(shifts);
     let displayList = [...processed].sort((a, b) => new Date(b.date) - new Date(a.date));
 
-    localStorage.setItem('extrahours_exact_data_v23', JSON.stringify(shifts));
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(shifts));
+    } catch(e) {}
     
     const tbody = document.getElementById('logsTable');
+    if (!tbody) return;
     tbody.innerHTML = '';
+    
     let totalHoursSum = 0;
     let totalPaySum = 0;
 
@@ -340,23 +413,39 @@
       totalHoursSum += Number(item.hours);
       totalPaySum += Number(item.finalAmt);
 
-      let weekendLabel = item.isWeekend ? ` <span style="color:#ffeb3b; font-size:0.75rem;">(${item.dayName} 18€)</span>` : ` <span style="color:#aaa; font-size:0.75rem;">(${item.dayName})</span>`;
-      
-      let overtimeTag = (!item.isWeekend && item.overtimeHours > 0) ? ` <span class="badge-red">+${item.overtimeHours.toFixed(1)}h υπερωρία</span>` : '';
-      let extraTag = item.extraRestPay > 0 ? ` <span class="badge-red" title="Ανάπαυση < 11h">⚠️ +${item.restHoursDeficit.toFixed(1)}h extra (€${item.extraRestPay.toFixed(2)})</span>` : '';
+      let weekendLabel = item.isWeekend ? ` <span style="color:#c62828; font-size:0.75rem;">(${item.dayName} 18€)</span>` : ` <span style="color:#666; font-size:0.75rem;">(${item.dayName})</span>`;
+      let extraTag = item.extraRestPay > 0 ? `<br><span class="badge-red">⚠️ < 11h ανάπαυση (+€${item.extraRestPay.toFixed(2)})</span>` : '';
 
       let origIndex = shifts.findIndex(s => s.date === item.date && s.start === item.start && s.end === item.end);
 
       tbody.innerHTML += `
-        <tr class="clickable-row" onclick="openForm(${origIndex})">
-          <td><b>${item.date}</b>${weekendLabel}${overtimeTag}${extraTag}<br><span style="color:#aaa; font-size:0.8rem;">🕒 ${item.start} - ${item.end}</span></td>
-          <td>Ώρες: <b>${Number(item.hours).toFixed(2)}h</b></td>
+        <tr class="clickable-row" onclick="editFromList(${origIndex})">
+          <td><b>${item.date}</b>${weekendLabel}${extraTag}<br><span style="color:#888; font-size:0.8rem;">🕒 ${item.start} - ${item.end}</span></td>
+          <td><b>${Number(item.hours).toFixed(2)}h</b></td>
           <td><b>€${Number(item.finalAmt).toFixed(2)}</b></td>
         </tr>`;
     });
 
-    document.getElementById('totalHoursVal').innerText = totalHoursSum.toFixed(2) + ' hrs';
+    document.getElementById('totalHoursVal').innerText = 'Σύνολο: ' + totalHoursSum.toFixed(2) + ' ώρες';
     document.getElementById('totalPayVal').innerText = '€' + totalPaySum.toFixed(2);
+  }
+
+  function editFromList(origIndex) {
+    document.getElementById('view-list').classList.remove('active');
+    document.getElementById('view-new').classList.add('active');
+    document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+    document.getElementById('nav-new').classList.add('active');
+
+    let item = shifts[origIndex];
+    if (item) {
+      document.getElementById('editIndex').value = origIndex;
+      document.getElementById('formTitle').innerText = 'Επεξεργασία Βάρδιας';
+      document.getElementById('workDate').value = item.date;
+      document.getElementById('startTime').value = item.start;
+      document.getElementById('endTime').value = item.end;
+      document.getElementById('deleteBtn').style.display = 'block';
+      livePreview();
+    }
   }
 
   function saveEntry() {
@@ -368,180 +457,44 @@
     if(!dateStr) return alert('Συμπλήρωσε ημερομηνία!');
 
     const entry = { date: dateStr, start: start, end: end };
-    let processed = processAllShifts(shifts);
 
-    if (editIndex === -1) {
+    if (isNaN(editIndex) || editIndex === -1 || editIndex >= shifts.length) {
       shifts.push(entry);
     } else {
-      let target = processed[editIndex];
-      let realIdx = shifts.findIndex(s => s.date === target.date && s.start === target.start && s.end === target.end);
-      if(realIdx !== -1) shifts[realIdx] = entry;
-      else shifts.push(entry);
+      shifts[editIndex] = entry;
     }
 
     saveAndRender();
-    closeForm();
+    switchView('list');
   }
 
   function deleteCurrentEntry() {
     const editIndex = parseInt(document.getElementById('editIndex').value);
-    let processed = processAllShifts(shifts);
-    if (editIndex >= 0) {
-      if (confirm('Σίγουρα θέλεις να διαγράψεις αυτή τη βάρδια?')) {
-        let target = processed[editIndex];
-        let realIdx = shifts.findIndex(s => s.date === target.date && s.start === target.start && s.end === target.end);
-        if(realIdx !== -1) shifts.splice(realIdx, 1);
+    if (!isNaN(editIndex) && editIndex >= 0 && editIndex < shifts.length) {
+      if (confirm('Σίγουρα θέλεις να διαγράψεις αυτή τη βάρδια;')) {
+        shifts.splice(editIndex, 1);
         saveAndRender();
-        closeForm();
+        switchView('list');
       }
     }
   }
 
-  async function exportExcelFile() {
+  function exportCSVFile() {
     let processed = processAllShifts(shifts);
     if(processed.length === 0) return alert('Δεν υπάρχουν δεδομένα!');
 
-    let inputEl = document.getElementById('exportMonth');
-    let val = inputEl.value.trim();
-    const workbook = new ExcelJS.Workbook();
-
-    let monthNames = {
-      "01": "ΙΑΝΟΥΑΡΙΟΣ", "02": "ΦΕΒΡΟΥΑΡΙΟΣ", "03": "ΜΑΡΤΙΟΣ", "04": "ΑΠΡΙΛΙΟΣ",
-      "05": "ΜΑΪΟΣ", "06": "ΙΟΥΝΙΟΣ", "07": "ΙΟΥΛΙΟΣ", "08": "ΑΥΓΟΥΣΤΟΣ",
-      "09": "ΣΕΠΤΕΜΒΡΙΟΣ", "10": "ΟΚΤΩΒΡΙΟΣ", "11": "ΝΟΕΜΒΡΙΟΣ", "12": "ΔΕΚΕΜΒΡΙΟΣ"
-    };
-
-    let datasetsToExport = [];
-
-    // Αν ο χρήστης έχει επιλέξει ολόκληρο έτος (π.χ. "2026")
-    if (val.length === 4 && !val.includes('-')) {
-      let yearMonths = [...new Set(processed.filter(item => item.date.startsWith(val)).map(item => item.date.substring(5, 7)))].sort();
-      if(yearMonths.length === 0) return alert('Δεν υπάρχουν δεδομένα για το επιλεγμένο έτος ' + val + '!');
-      
-      yearMonths.forEach(mNum => {
-        let mData = processed.filter(item => item.date.startsWith(val + '-' + mNum));
-        let mText = monthNames[mNum] || mNum;
-        let sheetName = `${mText} ${val}`;
-        datasetsToExport.push({ sheetName: sheetName, periodTitle: `${mText} ${val}`, data: mData });
-      });
-    } 
-    // Αν έχει επιλέξει μήνα (π.χ. "2026-09")
-    else if (val.length === 7 && val.includes('-')) {
-      let filteredData = processed.filter(item => item.date.startsWith(val));
-      if(filteredData.length === 0) return alert('Δεν υπάρχουν δεδομένα για τον επιλεγμένο μήνα!');
-      let [year, mNum] = val.split('-');
-      let mText = monthNames[mNum] || mNum;
-      let sheetName = `${mText} ${year}`;
-      datasetsToExport.push({ sheetName: sheetName, periodTitle: `${mText} ${year}`, data: filteredData });
-    } else {
-      datasetsToExport.push({ sheetName: "ΣΥΝΟΛΟ", periodTitle: "ΣΥΝΟΛΟ ΔΕΔΟΜΕΝΩΝ", data: processed });
-    }
-
-    datasetsToExport.forEach(ds => {
-      const worksheet = workbook.addWorksheet(ds.sheetName);
-
-      worksheet.addRow([`ΠΕΡΙΟΔΟΣ ΑΝΑΦΟΡΑΣ: ${ds.periodTitle}`]);
-      worksheet.getRow(1).font = { bold: true, size: 14, color: { argb: 'FF004D40' } };
-      worksheet.addRow();
-
-      const headerRow = worksheet.addRow([
-        'Ημερομηνία & Ημέρα', 
-        'Έναρξη', 
-        'Λήξη', 
-        'Συνολικές Ώρες', 
-        'Ώρες Υπερωρίας', 
-        'Ώρες Ανάπαυσης (<11h)', 
-        'Ποσό Ανάπαυσης (€)', 
-        'Συνολικό Ποσό'
-      ]);
-
-      headerRow.font = { bold: true, color: { argb: 'FFFFFFFF' } };
-      headerRow.eachCell((cell) => {
-        cell.fill = {
-          type: 'pattern',
-          pattern: 'solid',
-          fgColor: { argb: 'FF263238' }
-        };
-        cell.alignment = { vertical: 'middle', horizontal: 'center' };
-      });
-
-      worksheet.columns = [
-        { key: 'date', width: 26 },
-        { key: 'start', width: 12 },
-        { key: 'end', width: 12 },
-        { key: 'totalHours', width: 16 },
-        { key: 'overtime', width: 16 },
-        { key: 'restHours', width: 22 },
-        { key: 'restPay', width: 20 },
-        { key: 'finalPay', width: 18 }
-      ];
-
-      let totalHoursSum = 0;
-      let totalOvertimeHoursSum = 0;
-      let totalRestHoursSum = 0;
-      let totalRestPaySum = 0;
-      let totalPaySum = 0;
-
-      ds.data.forEach(item => {
-        totalHoursSum += Number(item.hours);
-        totalOvertimeHoursSum += Number(item.overtimeHours);
-        totalRestHoursSum += Number(item.restHoursDeficit);
-        totalRestPaySum += Number(item.extraRestPay);
-        totalPaySum += Number(item.finalAmt);
-        
-        let dateWithDay = `${item.date} (${item.dayName})`;
-        let row = worksheet.addRow([
-          dateWithDay,
-          item.start,
-          item.end,
-          Number(item.hours.toFixed(2)),
-          Number(item.overtimeHours.toFixed(2)),
-          Number(item.restHoursDeficit.toFixed(2)),
-          Number(item.extraRestPay.toFixed(2)),
-          Number(item.finalAmt.toFixed(2))
-        ]);
-
-        if (item.isWeekend) {
-          row.eachCell((cell) => {
-            cell.fill = {
-              type: 'pattern',
-              pattern: 'solid',
-              fgColor: { argb: 'FFFFEBEE' }
-            };
-            cell.font = { bold: true, color: { argb: 'FF9C0006' } };
-          });
-        }
-      });
-
-      worksheet.addRow({});
-      const totalsRow = worksheet.addRow([
-        'ΣΥΝΟΛΑ:',
-        '',
-        '',
-        Number(totalHoursSum.toFixed(2)),
-        Number(totalOvertimeHoursSum.toFixed(2)),
-        Number(totalRestHoursSum.toFixed(2)),
-        Number(totalRestPaySum.toFixed(2)),
-        Number(totalPaySum.toFixed(2))
-      ]);
-
-      totalsRow.font = { bold: true, size: 11 };
-      totalsRow.eachCell((cell) => {
-        cell.fill = {
-          type: 'pattern',
-          pattern: 'solid',
-          fgColor: { argb: 'FFECEFF1' }
-        };
-      });
+    let csvContent = "\uFEFFΗμερομηνία,Ημέρα,Έναρξη,Λήξη,Συνολικές Ώρες,Ώρες Υπερωρίας,Ώρες Ανάπαυσης (<11h),Ποσό Ανάπαυσης (€),Συνολικό Ποσό (€)\n";
+    
+    processed.forEach(item => {
+      csvContent += `"${item.date}","${item.dayName}","${item.start}","${item.end}",${item.hours.toFixed(2)},${item.overtimeHours.toFixed(2)},${item.restHoursDeficit.toFixed(2)},${item.extraRestPay.toFixed(2)},${item.finalAmt.toFixed(2)}\n`;
     });
 
-    const buffer = await workbook.xlsx.writeBuffer();
-    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-    saveAs(blob, `ExtraHours_${val}.xlsx`);
-  }
-
-  function syncGoogleSheets() {
-    alert("Για Google Sheets:\n1. Κάνε εξαγωγή Αρχείου Excel (.xlsx).\n2. Άνοιξε το Google Drive, δημιούργησε νέο Google Sheet.\n3. Πήγαινε Αρχείο -> Εισαγωγή και ανέβασε το αρχείο .xlsx.");
+    let blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    let url = URL.createObjectURL(blob);
+    let a = document.createElement('a');
+    a.href = url;
+    a.download = "ExtraHours_Report.csv";
+    a.click();
   }
 
   function exportBackupJSON() {
@@ -550,10 +503,6 @@
     dlAnchorElem.setAttribute("href", dataStr);
     dlAnchorElem.setAttribute("download", "extrahours_backup.json");
     dlAnchorElem.click();
-  }
-
-  function triggerRestoreJSON() {
-    document.getElementById('importFile').click();
   }
 
   function importBackupJSON(event) {
