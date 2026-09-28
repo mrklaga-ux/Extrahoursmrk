@@ -4,7 +4,6 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Work Hours</title>
-  
   <style>
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
@@ -127,6 +126,18 @@
   <!-- VIEW 1: ARCHIKI (HOME) -->
   <div id="view-home" class="view-section active">
     <div class="card">
+      <h3>Επιλογή Περιόδου (Μήνας ή Έτος)</h3>
+      <select id="periodSelect" onchange="saveAndRender()">
+        <option value="2026-09" selected>Σεπτέμβριος 2026</option>
+        <option value="2026-10">Οκτώβριος 2026</option>
+        <option value="2026-11">Νοέμβριος 2026</option>
+        <option value="2026-12">Δεκέμβριος 2026</option>
+        <option value="ALL">🗓️ Όλο το Έτος</option>
+      </select>
+      <button class="btn btn-success" onclick="exportCSVFile()">📊 Εξαγωγή σε Αρχείο Excel (.xlsx)</button>
+    </div>
+
+    <div class="card">
       <h3>Γρήγορες ενέργειες</h3>
       <button class="btn btn-primary" onclick="switchView('new')">+ Νέα καταχώρηση</button>
       <button class="btn btn-secondary" onclick="switchView('list')">📋 Λίστα καταχωρήσεων</button>
@@ -135,9 +146,6 @@
 
     <div class="card">
       <h3>Backup & Εξαγωγή</h3>
-      <label>Μήνας Αναφοράς CSV</label>
-      <input type="month" id="exportMonth" value="2026-09">
-      <button class="btn btn-success" onclick="exportCSVFile()">📊 Εξαγωγή CSV (για Excel/HR)</button>
       <button class="btn btn-primary" onclick="exportBackupJSON()">📥 Κατέβασμα Backup</button>
       <button class="btn btn-secondary" onclick="document.getElementById('importFile').click()">📤 Επαναφορά από Backup</button>
       <input type="file" id="importFile" style="display:none" accept=".json" onchange="importBackupJSON(event)">
@@ -332,7 +340,7 @@
 
           if (restHours < 11) {
             restHoursDeficit = 11 - restHours;
-            // FIXED: matched exactly to Excel formula rate (9.0 fixed for rest deficit)
+            // FIXED: exactly matched to Excel formula rate (9.0 fixed for rest deficit)
             let restRate = 9.0;
             extraRestPay = restHoursDeficit * restRate; 
           }
@@ -396,7 +404,14 @@
     }
 
     let processed = processAllShifts(shifts);
-    let displayList = [...processed].sort((a, b) => new Date(b.date) - new Date(a.date));
+    
+    let periodVal = document.getElementById('periodSelect') ? document.getElementById('periodSelect').value : "2026-09";
+    let filtered = processed.filter(item => {
+      if (periodVal === 'ALL') return true;
+      return item.date.startsWith(periodVal);
+    });
+
+    let displayList = [...filtered].sort((a, b) => new Date(b.date) - new Date(a.date));
 
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(shifts));
@@ -481,11 +496,17 @@
 
   function exportCSVFile() {
     let processed = processAllShifts(shifts);
-    if(processed.length === 0) return alert('Δεν υπάρχουν δεδομένα!');
+    let periodVal = document.getElementById('periodSelect') ? document.getElementById('periodSelect').value : "2026-09";
+    let filtered = processed.filter(item => {
+      if (periodVal === 'ALL') return true;
+      return item.date.startsWith(periodVal);
+    });
+
+    if(filtered.length === 0) return alert('Δεν υπάρχουν δεδομένα για αυτή την περίοδο!');
 
     let csvContent = "\uFEFFΗμερομηνία,Ημέρα,Έναρξη,Λήξη,Συνολικές Ώρες,Ώρες Υπερωρίας,Ώρες Ανάπαυσης (<11h),Ποσό Ανάπαυσης (€),Συνολικό Ποσό (€)\n";
     
-    processed.forEach(item => {
+    filtered.forEach(item => {
       csvContent += `"${item.date}","${item.dayName}","${item.start}","${item.end}",${item.hours.toFixed(2)},${item.overtimeHours.toFixed(2)},${item.restHoursDeficit.toFixed(2)},${item.extraRestPay.toFixed(2)},${item.finalAmt.toFixed(2)}\n`;
     });
 
