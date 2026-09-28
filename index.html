@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Extrahoursmrk</title>
   
-  <!-- Χρησιμοποιούμε τη βιβλιοθήκη ExcelJS για σωστή μορφοποίηση στηλών και χρωμάτων -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
   
@@ -165,7 +164,8 @@
     {date: "2026-09-23", start: "09:30", end: "00:30"},
     {date: "2026-09-24", start: "09:00", end: "00:00"},
     {date: "2026-09-25", start: "10:00", end: "23:45"},
-    {date: "2026-09-26", start: "10:00", end: "00:30"}
+    {date: "2026-09-26", start: "10:00", end: "02:45"},
+    {date: "2026-09-27", start: "11:00", end: "19:30"}
   ];
 
   let stored = localStorage.getItem('extrahours_exact_data_v23');
@@ -242,4 +242,297 @@
         }
       }
 
-      let totalAmt = baseAmount +
+      let totalAmt = baseAmount + extraRestPay;
+      return {
+        ...item,
+        dayName: dayName,
+        hours: hours,
+        overtimeHours: overtimeHours,
+        extraRestPay: extraRestPay,
+        restHoursDeficit: restHoursDeficit,
+        finalAmt: totalAmt,
+        isWeekend: weekend
+      };
+    });
+
+    return results;
+  }
+
+  function livePreview() {
+    let dateStr = document.getElementById('workDate').value;
+    let start = document.getElementById('startTime').value;
+    let end = document.getElementById('endTime').value;
+    let hours = calculateShiftHours(start, end);
+    let weekend = isWeekend(dateStr);
+    
+    let amt = weekend ? (hours * 18.0) : (Math.max(0, hours - 8) * 9.0);
+    
+    document.getElementById('totalShiftHours').value = hours.toFixed(2);
+    document.getElementById('finalAmount').value = amt.toFixed(2);
+  }
+
+  function toggleSettings() {
+    const card = document.getElementById('settingsCard');
+    card.style.display = card.style.display === 'block' ? 'none' : 'block';
+  }
+
+  function openForm(index = -1) {
+    document.getElementById('editIndex').value = index;
+    const deleteBtn = document.getElementById('deleteBtn');
+    let processed = processAllShifts(shifts);
+
+    if (index === -1) {
+      document.getElementById('formTitle').innerText = 'Νέα Καταχώρηση Βάρδιας';
+      let todayStr = new Date().toISOString().substring(0, 10);
+      document.getElementById('workDate').value = todayStr;
+      document.getElementById('startTime').value = '10:00';
+      document.getElementById('endTime').value = '18:00';
+      deleteBtn.style.display = 'none';
+    } else {
+      document.getElementById('formTitle').innerText = 'Επεξεργασία Βάρδιας';
+      let item = processed[index];
+      document.getElementById('workDate').value = item.date;
+      document.getElementById('startTime').value = item.start;
+      document.getElementById('endTime').value = item.end;
+      deleteBtn.style.display = 'block';
+    }
+    livePreview();
+    document.getElementById('formCard').style.display = 'block';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function closeForm() { document.getElementById('formCard').style.display = 'none'; }
+
+  function saveAndRender() {
+    let processed = processAllShifts(shifts);
+    let displayList = [...processed].sort((a, b) => new Date(b.date) - new Date(a.date));
+
+    localStorage.setItem('extrahours_exact_data_v23', JSON.stringify(shifts));
+    
+    const tbody = document.getElementById('logsTable');
+    tbody.innerHTML = '';
+    let totalHoursSum = 0;
+    let totalPaySum = 0;
+
+    displayList.forEach((item) => {
+      totalHoursSum += Number(item.hours);
+      totalPaySum += Number(item.finalAmt);
+
+      let weekendLabel = item.isWeekend ? ` <span style="color:#ffeb3b; font-size:0.75rem;">(\( {item.dayName} 18€)</span>` : ` <span style="color:#aaa; font-size:0.75rem;">( \){item.dayName})</span>`;
+      let extraTag = item.extraRestPay > 0 ? ` <span class="badge-red" title="Ανάπαυση < 11h">⚠️ +\( {item.restHoursDeficit.toFixed(1)}h extra (€ \){item.extraRestPay.toFixed(2)})</span>` : '';
+
+      let origIndex = shifts.findIndex(s => s.date === item.date && s.start === item.start && s.end === item.end);
+
+      tbody.innerHTML += `
+        <tr class="clickable-row" onclick="openForm(${origIndex})">
+          <td><b>\( {item.date}</b> \){weekendLabel}${extraTag}<br><span style="color:#aaa; font-size:0.8rem;">🕒 ${item.start} - ${item.end}</span></td>
+          <td>Ώρες: <b>${Number(item.hours).toFixed(2)}h</b></td>
+          <td><b>€${Number(item.finalAmt).toFixed(2)}</b></td>
+        </tr>`;
+    });
+
+    // Στρογγυλοποίηση τελικού ποσού προς τα κάτω στο πλησιέστερο 5
+    totalPaySum = Math.floor(totalPaySum / 5) * 5;
+
+    document.getElementById('totalHoursVal').innerText = totalHoursSum.toFixed(2) + ' hrs';
+    document.getElementById('totalPayVal').innerText = '€' + totalPaySum.toFixed(2);
+  }
+
+  function saveEntry() {
+    const editIndex = parseInt(document.getElementById('editIndex').value);
+    let dateStr = document.getElementById('workDate').value;
+    let start = document.getElementById('startTime').value;
+    let end = document.getElementById('endTime').value;
+
+    if(!dateStr) return alert('Συμπλήρωσε ημερομηνία!');
+
+    const entry = { date: dateStr, start: start, end: end };
+    let processed = processAllShifts(shifts);
+
+    if (editIndex === -1) {
+      shifts.push(entry);
+    } else {
+      let target = processed[editIndex];
+      let realIdx = shifts.findIndex(s => s.date === target.date && s.start === target.start && s.end === target.end);
+      if(realIdx !== -1) shifts[realIdx] = entry;
+      else shifts.push(entry);
+    }
+
+    saveAndRender();
+    closeForm();
+  }
+
+  function deleteCurrentEntry() {
+    const editIndex = parseInt(document.getElementById('editIndex').value);
+    let processed = processAllShifts(shifts);
+    if (editIndex >= 0) {
+      if (confirm('Σίγουρα θέλεις να διαγράψεις αυτή τη βάρδια?')) {
+        let target = processed[editIndex];
+        let realIdx = shifts.findIndex(s => s.date === target.date && s.start === target.start && s.end === target.end);
+        if(realIdx !== -1) shifts.splice(realIdx, 1);
+        saveAndRender();
+        closeForm();
+      }
+    }
+  }
+
+  async function exportExcelFile() {
+    let processed = processAllShifts(shifts);
+    if(processed.length === 0) return alert('Δεν υπάρχουν δεδομένα!');
+
+    let monthVal = document.getElementById('exportMonth').value;
+    let monthNames = {
+      "01": "Ιανουάριος", "02": "Φεβρουάριος", "03": "Μάρτιος", "04": "Απρίλιος",
+      "05": "Μάιος", "06": "Ιούνιος", "07": "Ιούλιος", "08": "Αύγουστος",
+      "09": "Σεπτέμβριος", "10": "Οκτώβριος", "11": "Νοέμβριος", "12": "Δεκέμβριος"
+    };
+    let [year, mNum] = monthVal.split('-');
+    let monthTitle = (monthNames[mNum] || mNum) + " " + year;
+
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet('Βάρδιες');
+
+    worksheet.addRow([`ΜΗΝΑΣ ΑΝΑΦΟΡΑΣ: ${monthTitle.toUpperCase()}`]);
+    worksheet.getRow(1).font = { bold: true, size: 14, color: { argb: 'FF004D40' } };
+    worksheet.addRow();
+
+    const headerRow = worksheet.addRow([
+      'Ημερομηνία & Ημέρα', 
+      'Έναρξη', 
+      'Λήξη', 
+      'Συνολικές Ώρες', 
+      'Ώρες Υπερωρίας', 
+      'Ώρες Ανάπαυσης (<11h)', 
+      'Ποσό Ανάπαυσης (€)', 
+      'Συνολικό Ποσό'
+    ]);
+
+    headerRow.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+    headerRow.eachCell((cell) => {
+      cell.fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: 'FF263238' }
+      };
+      cell.alignment = { vertical: 'middle', horizontal: 'center' };
+    });
+
+    worksheet.columns = [
+      { key: 'date', width: 26 },
+      { key: 'start', width: 12 },
+      { key: 'end', width: 12 },
+      { key: 'totalHours', width: 16 },
+      { key: 'overtime', width: 16 },
+      { key: 'restHours', width: 22 },
+      { key: 'restPay', width: 20 },
+      { key: 'finalPay', width: 18 }
+    ];
+
+    let totalHoursSum = 0;
+    let totalOvertimeHoursSum = 0;
+    let totalRestHoursSum = 0;
+    let totalRestPaySum = 0;
+    let totalPaySum = 0;
+
+    processed.forEach(item => {
+      totalHoursSum += Number(item.hours);
+      totalOvertimeHoursSum += Number(item.overtimeHours);
+      totalRestHoursSum += Number(item.restHoursDeficit);
+      totalRestPaySum += Number(item.extraRestPay);
+      totalPaySum += Number(item.finalAmt);
+      
+      let dateWithDay = `\( {item.date} ( \){item.dayName})`;
+      let row = worksheet.addRow([
+        dateWithDay,
+        item.start,
+        item.end,
+        Number(item.hours.toFixed(2)),
+        Number(item.overtimeHours.toFixed(2)),
+        Number(item.restHoursDeficit.toFixed(2)),
+        Number(item.extraRestPay.toFixed(2)),
+        Number(item.finalAmt.toFixed(2))
+      ]);
+
+      if (item.isWeekend) {
+        row.eachCell((cell) => {
+          cell.fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: 'FFFFEBEE' }
+          };
+          cell.font = { bold: true, color: { argb: 'FF9C0006' } };
+        });
+      }
+    });
+
+    // Στρογγυλοποίηση τελικού ποσού προς τα κάτω στο πλησιέστερο 5
+    totalPaySum = Math.floor(totalPaySum / 5) * 5;
+
+    worksheet.addRow({});
+    const totalsRow = worksheet.addRow([
+      'ΣΥΝΟΛΑ:',
+      '',
+      '',
+      Number(totalHoursSum.toFixed(2)),
+      Number(totalOvertimeHoursSum.toFixed(2)),
+      Number(totalRestHoursSum.toFixed(2)),
+      Number(totalRestPaySum.toFixed(2)),
+      Number(totalPaySum.toFixed(2))
+    ]);
+
+    totalsRow.font = { bold: true, size: 11 };
+    totalsRow.eachCell((cell) => {
+      cell.fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: 'FFECEFF1' }
+      };
+    });
+
+    let monthFilename = (monthNames[mNum] || mNum) + "_" + year;
+    const buffer = await workbook.xlsx.writeBuffer();
+    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    saveAs(blob, `ExtraHours_${monthFilename}.xlsx`);
+  }
+
+  function syncGoogleSheets() {
+    alert("Για Google Sheets:\n1. Κάνε εξαγωγή Αρχείου Excel (.xlsx).\n2. Άνοιξε το Google Drive, δημιούργησε νέο Google Sheet.\n3. Πήγαινε Αρχείο -> Εισαγωγή και ανέβασε το αρχείο .xlsx.");
+  }
+
+  function exportBackupJSON() {
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(shifts, null, 2));
+    const dlAnchorElem = document.createElement('a');
+    dlAnchorElem.setAttribute("href", dataStr);
+    dlAnchorElem.setAttribute("download", "extrahours_backup.json");
+    dlAnchorElem.click();
+  }
+
+  function triggerRestoreJSON() {
+    document.getElementById('importFile').click();
+  }
+
+  function importBackupJSON(event) {
+    const fileReader = new FileReader();
+    if (event.target.files[0]) {
+      fileReader.readAsText(event.target.files[0], "UTF-8");
+      fileReader.onload = function (e) {
+        try {
+          let parsed = JSON.parse(e.target.result);
+          if (Array.isArray(parsed)) {
+            shifts = parsed;
+            saveAndRender();
+            alert("Το backup επαναφέρθηκε με επιτυχία!");
+          } else {
+            alert("Το αρχείο δεν είναι έγκυρο.");
+          }
+        } catch (err) {
+          alert("Σφάλμα ανάγνωσης αρχείου.");
+        }
+      };
+    }
+  }
+
+  saveAndRender();
+</script>
+</body>
+</html>
