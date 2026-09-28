@@ -55,6 +55,7 @@
     button.btn-sheets { background: #107c41; color: #fff; border: none; margin-top: 8px; font-weight: 600; }
     button.btn-backup { background: #1976d2; color: #fff; border: none; margin-top: 8px; font-weight: 600; }
     button.btn-restore { background: #f57c00; color: #fff; border: none; margin-top: 8px; font-weight: 600; }
+    button.btn-auto { background: #6a1b9a; color: #fff; border: none; margin-top: 8px; font-weight: 600; }
     button.btn-toggle-settings { background: #333; color: #ccc; border: 1px solid #555; font-size: 0.9rem; padding: 10px; margin-bottom: 14px; }
     
     .val-box { background: #252525; padding: 12px; border-radius: 8px; text-align: center; margin-bottom: 10px; border: 1px solid #383838; }
@@ -87,6 +88,7 @@
     <h3 style="margin-top:0; color:#1976d2; font-size: 1.1rem;">Διαχείριση Backup & Επαναφοράς</h3>
     <button class="btn-backup" onclick="exportBackupJSON()">📤 Εξαγωγή Backup</button>
     <button class="btn-restore" onclick="triggerRestoreJSON()">📥 Εισαγωγή Backup</button>
+    <button class="btn-auto" onclick="restoreAutoBackup()">↩️ Επαναφορά Αυτόματου Backup</button>
     <input type="file" id="importFile" style="display:none" accept=".json" onchange="importBackupJSON(event)">
   </div>
 
@@ -128,7 +130,7 @@
 
   <div class="card">
     <label>Μήνας Αναφοράς</label>
-    <input type="month" id="exportMonth" value="2026-09">
+    <input type="month" id="exportMonth" value="2026-09" onchange="saveAndRender()">
 
     <button class="btn-sec" onclick="exportExcelFile()">📊 Εξαγωγή σε Αρχείο Excel (.xlsx)</button>
     <button class="btn-sheets" onclick="syncGoogleSheets()">🟢 Οδηγίες για Google Sheets</button>
@@ -305,9 +307,19 @@
 
   function saveAndRender() {
     let processed = processAllShifts(shifts);
-    let displayList = [...processed].sort((a, b) => new Date(b.date) - new Date(a.date));
+    let monthVal = document.getElementById('exportMonth').value;
 
+    let filtered = processed.filter(item => item.date.startsWith(monthVal));
+    let displayList = [...filtered].sort((a, b) => new Date(b.date) - new Date(a.date));
+
+    // Κύρια αποθήκευση
     localStorage.setItem('extrahours_exact_data_v23', JSON.stringify(shifts));
+
+    // Αυτόματο Backup
+    localStorage.setItem('extrahours_auto_backup', JSON.stringify({
+      timestamp: new Date().toISOString(),
+      data: shifts
+    }));
     
     const tbody = document.getElementById('logsTable');
     tbody.innerHTML = '';
@@ -375,6 +387,24 @@
     }
   }
 
+  function restoreAutoBackup() {
+    let auto = localStorage.getItem('extrahours_auto_backup');
+    if (!auto) {
+      alert('Δεν υπάρχει αυτόματο backup ακόμα.');
+      return;
+    }
+    if (confirm('Θέλεις να επαναφέρεις το τελευταίο αυτόματο backup;')) {
+      try {
+        let parsed = JSON.parse(auto);
+        shifts = parsed.data;
+        saveAndRender();
+        alert('Το αυτόματο backup επαναφέρθηκε επιτυχώς!');
+      } catch (e) {
+        alert('Σφάλμα κατά την επαναφορά.');
+      }
+    }
+  }
+
   async function exportExcelFile() {
     let processed = processAllShifts(shifts);
     if(processed.length === 0) return alert('Δεν υπάρχουν δεδομένα!');
@@ -387,6 +417,8 @@
     };
     let [year, mNum] = monthVal.split('-');
     let monthTitle = (monthNames[mNum] || mNum) + " " + year;
+
+    processed = processed.filter(item => item.date.startsWith(monthVal));
 
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet('Βάρδιες');
@@ -464,7 +496,6 @@
       }
     });
 
-    // Στρογγυλοποίηση τελικού ποσού προς τα κάτω στο πλησιέστερο 5
     totalPaySum = Math.floor(totalPaySum / 5) * 5;
 
     worksheet.addRow({});
