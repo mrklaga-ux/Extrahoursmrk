@@ -56,6 +56,7 @@
     button.btn-backup { background: #1976d2; color: #fff; border: none; margin-top: 8px; font-weight: 600; }
     button.btn-restore { background: #f57c00; color: #fff; border: none; margin-top: 8px; font-weight: 600; }
     button.btn-auto { background: #6a1b9a; color: #fff; border: none; margin-top: 8px; font-weight: 600; }
+    button.btn-year { background: #00695c; color: #fff; border: none; margin-top: 8px; font-weight: 600; }
     button.btn-toggle-settings { background: #333; color: #ccc; border: 1px solid #555; font-size: 0.9rem; padding: 10px; margin-bottom: 14px; }
     
     .val-box { background: #252525; padding: 12px; border-radius: 8px; text-align: center; margin-bottom: 10px; border: 1px solid #383838; }
@@ -133,6 +134,7 @@
     <input type="month" id="exportMonth" value="2026-09" onchange="saveAndRender()">
 
     <button class="btn-sec" onclick="exportExcelFile()">📊 Εξαγωγή σε Αρχείο Excel (.xlsx)</button>
+    <button class="btn-year" onclick="exportFullYearExcel()">📊 Εξαγωγή Όλου του Έτους</button>
     <button class="btn-sheets" onclick="syncGoogleSheets()">🟢 Οδηγίες για Google Sheets</button>
   </div>
 
@@ -312,7 +314,6 @@
     let filtered = processed.filter(item => item.date.startsWith(monthVal));
     let displayList = [...filtered].sort((a, b) => new Date(b.date) - new Date(a.date));
 
-    // Κύρια αποθήκευση
     localStorage.setItem('extrahours_exact_data_v23', JSON.stringify(shifts));
 
     // Αυτόματο Backup
@@ -523,6 +524,162 @@
     const buffer = await workbook.xlsx.writeBuffer();
     const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
     saveAs(blob, 'ExtraHours_' + monthFilename + '.xlsx');
+  }
+
+  async function exportFullYearExcel() {
+    let processed = processAllShifts(shifts);
+    if(processed.length === 0) return alert('Δεν υπάρχουν δεδομένα!');
+
+    let monthNames = {
+      "01": "Ιανουάριος", "02": "Φεβρουάριος", "03": "Μάρτιος", "04": "Απρίλιος",
+      "05": "Μάιος", "06": "Ιούνιος", "07": "Ιούλιος", "08": "Αύγουστος",
+      "09": "Σεπτέμβριος", "10": "Οκτώβριος", "11": "Νοέμβριος", "12": "Δεκέμβριος"
+    };
+
+    // Ομαδοποίηση ανά μήνα
+    let byMonth = {};
+    processed.forEach(item => {
+      let m = item.date.substring(0, 7); // YYYY-MM
+      if (!byMonth[m]) byMonth[m] = [];
+      byMonth[m].push(item);
+    });
+
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet('Όλο το Έτος');
+
+    worksheet.addRow(['ΕΞΑΓΩΓΗ ΟΛΟΥ ΤΟΥ ΕΤΟΥΣ']);
+    worksheet.getRow(1).font = { bold: true, size: 16, color: { argb: 'FF004D40' } };
+    worksheet.addRow();
+
+    let grandHours = 0;
+    let grandOvertime = 0;
+    let grandRestHours = 0;
+    let grandRestPay = 0;
+    let grandPay = 0;
+
+    // Ταξινόμηση μηνών
+    let sortedMonths = Object.keys(byMonth).sort();
+
+    sortedMonths.forEach(monthKey => {
+      let [year, mNum] = monthKey.split('-');
+      let monthTitle = (monthNames[mNum] || mNum) + " " + year;
+
+      worksheet.addRow(['ΜΗΝΑΣ: ' + monthTitle.toUpperCase()]);
+      worksheet.lastRow.font = { bold: true, size: 12, color: { argb: 'FF1565C0' } };
+
+      const headerRow = worksheet.addRow([
+        'Ημερομηνία & Ημέρα', 
+        'Έναρξη', 
+        'Λήξη', 
+        'Συνολικές Ώρες', 
+        'Ώρες Υπερωρίας', 
+        'Ώρες Ανάπαυσης (<11h)', 
+        'Ποσό Ανάπαυσης (€)', 
+        'Συνολικό Ποσό'
+      ]);
+
+      headerRow.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+      headerRow.eachCell((cell) => {
+        cell.fill = {
+          type: 'pattern',
+          pattern: 'solid',
+          fgColor: { argb: 'FF263238' }
+        };
+      });
+
+      let monthHours = 0, monthOvertime = 0, monthRestH = 0, monthRestP = 0, monthPay = 0;
+
+      byMonth[monthKey].forEach(item => {
+        monthHours += Number(item.hours);
+        monthOvertime += Number(item.overtimeHours);
+        monthRestH += Number(item.restHoursDeficit);
+        monthRestP += Number(item.extraRestPay);
+        monthPay += Number(item.finalAmt);
+
+        let dateWithDay = item.date + ' (' + item.dayName + ')';
+        let row = worksheet.addRow([
+          dateWithDay,
+          item.start,
+          item.end,
+          Number(item.hours.toFixed(2)),
+          Number(item.overtimeHours.toFixed(2)),
+          Number(item.restHoursDeficit.toFixed(2)),
+          Number(item.extraRestPay.toFixed(2)),
+          Number(item.finalAmt.toFixed(2))
+        ]);
+
+        if (item.isWeekend) {
+          row.eachCell((cell) => {
+            cell.fill = {
+              type: 'pattern',
+              pattern: 'solid',
+              fgColor: { argb: 'FFFFEBEE' }
+            };
+            cell.font = { bold: true, color: { argb: 'FF9C0006' } };
+          });
+        }
+      });
+
+      // Σύνολα μήνα
+      let monthPayRounded = Math.floor(monthPay / 5) * 5;
+      const monthTotalRow = worksheet.addRow([
+        'ΣΥΝΟΛΑ ΜΗΝΑ:',
+        '',
+        '',
+        Number(monthHours.toFixed(2)),
+        Number(monthOvertime.toFixed(2)),
+        Number(monthRestH.toFixed(2)),
+        Number(monthRestP.toFixed(2)),
+        Number(monthPayRounded.toFixed(2))
+      ]);
+      monthTotalRow.font = { bold: true };
+      monthTotalRow.eachCell(cell => {
+        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE3F2FD' } };
+      });
+
+      worksheet.addRow({}); // κενή γραμμή
+
+      grandHours += monthHours;
+      grandOvertime += monthOvertime;
+      grandRestHours += monthRestH;
+      grandRestPay += monthRestP;
+      grandPay += monthPay;
+    });
+
+    // Μεγάλο σύνολο έτους
+    let grandPayRounded = Math.floor(grandPay / 5) * 5;
+    worksheet.addRow(['ΣΥΝΟΛΑ ΟΛΟΥ ΤΟΥ ΕΤΟΥΣ:']);
+    worksheet.lastRow.font = { bold: true, size: 13, color: { argb: 'FFB71C1C' } };
+
+    const yearTotalRow = worksheet.addRow([
+      'ΓΕΝΙΚΟ ΣΥΝΟΛΟ:',
+      '',
+      '',
+      Number(grandHours.toFixed(2)),
+      Number(grandOvertime.toFixed(2)),
+      Number(grandRestHours.toFixed(2)),
+      Number(grandRestPay.toFixed(2)),
+      Number(grandPayRounded.toFixed(2))
+    ]);
+    yearTotalRow.font = { bold: true, size: 12 };
+    yearTotalRow.eachCell(cell => {
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFCDD2' } };
+    });
+
+    worksheet.columns = [
+      { width: 26 },
+      { width: 12 },
+      { width: 12 },
+      { width: 16 },
+      { width: 16 },
+      { width: 22 },
+      { width: 20 },
+      { width: 18 }
+    ];
+
+    const buffer = await workbook.xlsx.writeBuffer();
+    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    saveAs(blob, 'ExtraHours_Ολο_το_Ετος.xlsx');
   }
 
   function syncGoogleSheets() {
