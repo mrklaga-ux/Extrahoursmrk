@@ -61,7 +61,9 @@
     button.btn-toggle-settings { background: #333; color: #ccc; border: 1px solid #555; font-size: 0.9rem; padding: 10px; margin-bottom: 14px; }
     
     .val-box { background: #252525; padding: 12px; border-radius: 8px; text-align: center; margin-bottom: 10px; border: 1px solid #383838; }
-    .val { font-size: 1.6rem; font-weight: bold; color: #00e676; margin-top: 4px; }
+    .val { font-size: 1.5rem; font-weight: bold; color: #00e676; margin-top: 4px; }
+    .val-small { font-size: 1.15rem; font-weight: bold; color: #80cbc4; margin-top: 4px; }
+    .val-year { font-size: 1.25rem; font-weight: bold; color: #ffab40; margin-top: 4px; }
     
     table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.85rem; }
     th, td { padding: 12px 8px; border-bottom: 1px solid #333; text-align: left; }
@@ -136,8 +138,27 @@
       <div class="val" id="totalHoursVal">0.00 hrs</div>
     </div>
     <div class="val-box">
+      <label>Ώρες Υπερωρίας Μήνα</label>
+      <div class="val-small" id="totalOvertimeVal">0.00 hrs</div>
+    </div>
+    <div class="val-box">
+      <label>Ώρες Ανάπαυσης (<11h) Μήνα</label>
+      <div class="val-small" id="totalRestVal">0.00 hrs</div>
+    </div>
+    <div class="val-box">
       <label>Συνολικό Ποσό Μήνα</label>
       <div class="val" id="totalPayVal">€0.00</div>
+    </div>
+
+    <hr style="border-color:#444; margin: 16px 0;">
+
+    <div class="val-box" style="border-color:#ffab40;">
+      <label style="color:#ffab40;">Σύνολο Έτους (Ώρες)</label>
+      <div class="val-year" id="yearHoursVal">0.00 hrs</div>
+    </div>
+    <div class="val-box" style="border-color:#ffab40;">
+      <label style="color:#ffab40;">Σύνολο Έτους (Ποσό)</label>
+      <div class="val-year" id="yearPayVal">€0.00</div>
     </div>
   </div>
 
@@ -221,7 +242,6 @@
     let sorted = [...arr].sort((a, b) => new Date(a.date) - new Date(b.date));
     
     let results = sorted.map((item, idx) => {
-      // Αν υπάρχει ήδη αποθηκευμένο ποσό, το χρησιμοποιούμε (παλιά δεδομένα)
       if (item.finalAmt !== undefined && item.hours !== undefined) {
         return {
           ...item,
@@ -230,7 +250,6 @@
         };
       }
 
-      // Αλλιώς υπολογίζουμε με τις τρέχουσες τιμές
       let hours = calculateShiftHours(item.start, item.end);
       let weekend = isWeekend(item.date);
       let dayName = getDayName(item.date);
@@ -303,7 +322,6 @@
     const card = document.getElementById('settingsCard');
     card.style.display = card.style.display === 'block' ? 'none' : 'block';
     
-    // Γέμισμα των πεδίων τιμών
     document.getElementById('rateWeekday').value = rates.weekday;
     document.getElementById('rateWeekend').value = rates.weekend;
   }
@@ -330,7 +348,11 @@
 
     if (index === -1) {
       document.getElementById('formTitle').innerText = 'Νέα Καταχώρηση Βάρδιας';
-      let todayStr = new Date().toISOString().substring(0, 10);
+      // Τοπική ημερομηνία (χωρίς timezone bug)
+      const now = new Date();
+      const todayStr = now.getFullYear() + '-' + 
+                       String(now.getMonth() + 1).padStart(2, '0') + '-' + 
+                       String(now.getDate()).padStart(2, '0');
       document.getElementById('workDate').value = todayStr;
       document.getElementById('startTime').value = '10:00';
       document.getElementById('endTime').value = '18:00';
@@ -354,7 +376,6 @@
     let processed = processAllShifts(shifts);
     let monthVal = document.getElementById('exportMonth').value;
 
-    // Αποθήκευση του επιλεγμένου μήνα
     if (monthVal) {
       localStorage.setItem('extrahours_selected_month', monthVal);
     }
@@ -364,7 +385,6 @@
 
     localStorage.setItem('extrahours_exact_data_v23', JSON.stringify(shifts));
 
-    // Αυτόματο Backup
     localStorage.setItem('extrahours_auto_backup', JSON.stringify({
       timestamp: new Date().toISOString(),
       data: shifts
@@ -373,11 +393,15 @@
     const tbody = document.getElementById('logsTable');
     tbody.innerHTML = '';
     let totalHoursSum = 0;
+    let totalOvertimeSum = 0;
+    let totalRestSum = 0;
     let totalPaySum = 0;
 
     displayList.forEach((item) => {
-      totalHoursSum += Number(item.hours);
-      totalPaySum += Number(item.finalAmt);
+      totalHoursSum += Number(item.hours || 0);
+      totalOvertimeSum += Number(item.overtimeHours || 0);
+      totalRestSum += Number(item.restHoursDeficit || 0);
+      totalPaySum += Number(item.finalAmt || 0);
 
       let weekendLabel = item.isWeekend ? ' <span style="color:#ffeb3b; font-size:0.75rem;">(' + item.dayName + ' ' + rates.weekend + '€)</span>' : ' <span style="color:#aaa; font-size:0.75rem;">(' + item.dayName + ')</span>';
       let extraTag = item.extraRestPay > 0 ? ' <span class="badge-red" title="Ανάπαυση < 11h">⚠️ +' + item.restHoursDeficit.toFixed(1) + 'h extra (€' + item.extraRestPay.toFixed(2) + ')</span>' : '';
@@ -391,11 +415,28 @@
         '</tr>';
     });
 
-    // Στρογγυλοποίηση τελικού ποσού προς τα κάτω στο πλησιέστερο 5
+    // Στρογγυλοποίηση ποσού μήνα
     totalPaySum = Math.floor(totalPaySum / 5) * 5;
 
     document.getElementById('totalHoursVal').innerText = totalHoursSum.toFixed(2) + ' hrs';
+    document.getElementById('totalOvertimeVal').innerText = totalOvertimeSum.toFixed(2) + ' hrs';
+    document.getElementById('totalRestVal').innerText = totalRestSum.toFixed(2) + ' hrs';
     document.getElementById('totalPayVal').innerText = '€' + totalPaySum.toFixed(2);
+
+    // Υπολογισμός συνόλων έτους
+    let year = monthVal ? monthVal.substring(0, 4) : new Date().getFullYear().toString();
+    let yearFiltered = processed.filter(item => item.date.startsWith(year));
+    
+    let yearHours = 0;
+    let yearPay = 0;
+    yearFiltered.forEach(item => {
+      yearHours += Number(item.hours || 0);
+      yearPay += Number(item.finalAmt || 0);
+    });
+    yearPay = Math.floor(yearPay / 5) * 5;
+
+    document.getElementById('yearHoursVal').innerText = yearHours.toFixed(2) + ' hrs';
+    document.getElementById('yearPayVal').innerText = '€' + yearPay.toFixed(2);
   }
 
   function saveEntry() {
@@ -406,20 +447,16 @@
 
     if(!dateStr) return alert('Συμπλήρωσε ημερομηνία!');
 
-    // Υπολογισμός με τις τρέχουσες τιμές
     let hours = calculateShiftHours(start, end);
     let weekend = isWeekend(dateStr);
     let overtimeHours = Math.max(0, hours - 8);
     let baseAmount = weekend ? (hours * rates.weekend) : (overtimeHours * rates.weekday);
 
-    // Υπολογισμός rest (απλοποιημένος για αποθήκευση)
     let extraRestPay = 0;
     let restHoursDeficit = 0;
 
-    // Βρίσκουμε την προηγούμενη βάρδια για rest
     let tempShifts = [...shifts];
     if (editIndex >= 0) {
-      // Αν επεξεργαζόμαστε, αφαιρούμε προσωρινά την παλιά
       let processed = processAllShifts(shifts);
       let target = processed[editIndex];
       let realIdx = shifts.findIndex(s => s.date === target.date && s.start === target.start && s.end === target.end);
@@ -472,6 +509,10 @@
       if(realIdx !== -1) shifts[realIdx] = entry;
       else shifts.push(entry);
     }
+
+    // Αυτόματη μετάβαση στον μήνα της βάρδιας
+    let entryMonth = dateStr.substring(0, 7);
+    document.getElementById('exportMonth').value = entryMonth;
 
     saveAndRender();
     closeForm();
@@ -818,11 +859,10 @@
     }
   }
 
-  // Αρχικοποίηση πεδίων τιμών
+  // Αρχικοποίηση
   document.getElementById('rateWeekday').value = rates.weekday;
   document.getElementById('rateWeekend').value = rates.weekend;
 
-  // Ορισμός μήνα: φορτώνει τον αποθηκευμένο, αλλιώς τον τρέχοντα
   let savedMonth = localStorage.getItem('extrahours_selected_month');
   if (savedMonth) {
     document.getElementById('exportMonth').value = savedMonth;
