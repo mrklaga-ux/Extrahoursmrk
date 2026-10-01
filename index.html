@@ -57,6 +57,7 @@
     button.btn-restore { background: #f57c00; color: #fff; border: none; margin-top: 8px; font-weight: 600; }
     button.btn-auto { background: #6a1b9a; color: #fff; border: none; margin-top: 8px; font-weight: 600; }
     button.btn-year { background: #00695c; color: #fff; border: none; margin-top: 8px; font-weight: 600; }
+    button.btn-rates { background: #ef6c00; color: #fff; border: none; margin-top: 8px; font-weight: 600; }
     button.btn-toggle-settings { background: #333; color: #ccc; border: 1px solid #555; font-size: 0.9rem; padding: 10px; margin-bottom: 14px; }
     
     .val-box { background: #252525; padding: 12px; border-radius: 8px; text-align: center; margin-bottom: 10px; border: 1px solid #383838; }
@@ -91,6 +92,17 @@
     <button class="btn-restore" onclick="triggerRestoreJSON()">📥 Εισαγωγή Backup</button>
     <button class="btn-auto" onclick="restoreAutoBackup()">↩️ Επαναφορά Αυτόματου Backup</button>
     <input type="file" id="importFile" style="display:none" accept=".json" onchange="importBackupJSON(event)">
+
+    <hr style="border-color:#444; margin: 16px 0;">
+
+    <h3 style="color:#ef6c00; font-size: 1.1rem;">Τιμές Χρέωσης</h3>
+    <label>Τιμή Υπερωρίας Καθημερινής (€ / ώρα)</label>
+    <input type="number" step="0.01" id="rateWeekday" value="9">
+
+    <label>Τιμή Σαββατοκύριακου (€ / ώρα)</label>
+    <input type="number" step="0.01" id="rateWeekend" value="18">
+
+    <button class="btn-rates" onclick="saveRates()">💾 Αποθήκευση Τιμών</button>
   </div>
 
   <div class="card" id="formCard">
@@ -153,6 +165,9 @@
   </div>
 
 <script>
+  // Φόρτωση τιμών χρέωσης
+  let rates = JSON.parse(localStorage.getItem('extrahours_rates') || '{"weekday":9,"weekend":18}');
+  
   let defaultShifts = [
     {date: "2026-09-01", start: "09:15", end: "20:30"},
     {date: "2026-09-02", start: "09:30", end: "01:30"},
@@ -206,6 +221,16 @@
     let sorted = [...arr].sort((a, b) => new Date(a.date) - new Date(b.date));
     
     let results = sorted.map((item, idx) => {
+      // Αν υπάρχει ήδη αποθηκευμένο ποσό, το χρησιμοποιούμε (παλιά δεδομένα)
+      if (item.finalAmt !== undefined && item.hours !== undefined) {
+        return {
+          ...item,
+          dayName: getDayName(item.date),
+          isWeekend: isWeekend(item.date)
+        };
+      }
+
+      // Αλλιώς υπολογίζουμε με τις τρέχουσες τιμές
       let hours = calculateShiftHours(item.start, item.end);
       let weekend = isWeekend(item.date);
       let dayName = getDayName(item.date);
@@ -214,9 +239,9 @@
       let overtimeHours = Math.max(0, hours - 8);
 
       if (weekend) {
-        baseAmount = hours * 18.0;
+        baseAmount = hours * rates.weekend;
       } else {
-        baseAmount = overtimeHours * 9.0;
+        baseAmount = overtimeHours * rates.weekday;
       }
 
       let extraRestPay = 0;
@@ -240,8 +265,7 @@
 
           if (restHours < 11) {
             restHoursDeficit = 11 - restHours;
-            let restRate = 9.0;
-            extraRestPay = restHoursDeficit * restRate; 
+            extraRestPay = restHoursDeficit * rates.weekday; 
           }
         }
       }
@@ -269,7 +293,7 @@
     let hours = calculateShiftHours(start, end);
     let weekend = isWeekend(dateStr);
     
-    let amt = weekend ? (hours * 18.0) : (Math.max(0, hours - 8) * 9.0);
+    let amt = weekend ? (hours * rates.weekend) : (Math.max(0, hours - 8) * rates.weekday);
     
     document.getElementById('totalShiftHours').value = hours.toFixed(2);
     document.getElementById('finalAmount').value = amt.toFixed(2);
@@ -278,6 +302,25 @@
   function toggleSettings() {
     const card = document.getElementById('settingsCard');
     card.style.display = card.style.display === 'block' ? 'none' : 'block';
+    
+    // Γέμισμα των πεδίων τιμών
+    document.getElementById('rateWeekday').value = rates.weekday;
+    document.getElementById('rateWeekend').value = rates.weekend;
+  }
+
+  function saveRates() {
+    let weekday = parseFloat(document.getElementById('rateWeekday').value);
+    let weekend = parseFloat(document.getElementById('rateWeekend').value);
+
+    if (isNaN(weekday) || weekday < 0 || isNaN(weekend) || weekend < 0) {
+      alert('Βάλε σωστές τιμές!');
+      return;
+    }
+
+    rates.weekday = weekday;
+    rates.weekend = weekend;
+    localStorage.setItem('extrahours_rates', JSON.stringify(rates));
+    alert('Οι τιμές αποθηκεύτηκαν!\nΘα ισχύουν για τις νέες καταχωρήσεις και διορθώσεις.');
   }
 
   function openForm(index = -1) {
@@ -331,7 +374,7 @@
       totalHoursSum += Number(item.hours);
       totalPaySum += Number(item.finalAmt);
 
-      let weekendLabel = item.isWeekend ? ' <span style="color:#ffeb3b; font-size:0.75rem;">(' + item.dayName + ' 18€)</span>' : ' <span style="color:#aaa; font-size:0.75rem;">(' + item.dayName + ')</span>';
+      let weekendLabel = item.isWeekend ? ' <span style="color:#ffeb3b; font-size:0.75rem;">(' + item.dayName + ' ' + rates.weekend + '€)</span>' : ' <span style="color:#aaa; font-size:0.75rem;">(' + item.dayName + ')</span>';
       let extraTag = item.extraRestPay > 0 ? ' <span class="badge-red" title="Ανάπαυση < 11h">⚠️ +' + item.restHoursDeficit.toFixed(1) + 'h extra (€' + item.extraRestPay.toFixed(2) + ')</span>' : '';
 
       let origIndex = shifts.findIndex(s => s.date === item.date && s.start === item.start && s.end === item.end);
@@ -358,12 +401,67 @@
 
     if(!dateStr) return alert('Συμπλήρωσε ημερομηνία!');
 
-    const entry = { date: dateStr, start: start, end: end };
-    let processed = processAllShifts(shifts);
+    // Υπολογισμός με τις τρέχουσες τιμές
+    let hours = calculateShiftHours(start, end);
+    let weekend = isWeekend(dateStr);
+    let overtimeHours = Math.max(0, hours - 8);
+    let baseAmount = weekend ? (hours * rates.weekend) : (overtimeHours * rates.weekday);
+
+    // Υπολογισμός rest (απλοποιημένος για αποθήκευση)
+    let extraRestPay = 0;
+    let restHoursDeficit = 0;
+
+    // Βρίσκουμε την προηγούμενη βάρδια για rest
+    let tempShifts = [...shifts];
+    if (editIndex >= 0) {
+      // Αν επεξεργαζόμαστε, αφαιρούμε προσωρινά την παλιά
+      let processed = processAllShifts(shifts);
+      let target = processed[editIndex];
+      let realIdx = shifts.findIndex(s => s.date === target.date && s.start === target.start && s.end === target.end);
+      if (realIdx !== -1) tempShifts.splice(realIdx, 1);
+    }
+    tempShifts.push({date: dateStr, start: start, end: end});
+    let sortedTemp = tempShifts.sort((a, b) => new Date(a.date) - new Date(b.date));
+    let currIdx = sortedTemp.findIndex(s => s.date === dateStr && s.start === start && s.end === end);
+
+    if (currIdx > 0) {
+      let prev = sortedTemp[currIdx - 1];
+      let prevDateObj = new Date(prev.date);
+      let currDateObj = new Date(dateStr);
+      let diffDays = Math.round((currDateObj - prevDateObj) / (1000 * 60 * 60 * 24));
+
+      if (diffDays === 1) {
+        let prevEndMin = timeToMinutes(prev.end);
+        let prevEndTimeAbsolute = prevEndMin;
+        if (timeToMinutes(prev.end) < timeToMinutes(prev.start)) {
+          prevEndTimeAbsolute += 24 * 60;
+        }
+        let currStartAbsolute = timeToMinutes(start) + 24 * 60;
+        let restHours = (currStartAbsolute - prevEndTimeAbsolute) / 60;
+        if (restHours < 11) {
+          restHoursDeficit = 11 - restHours;
+          extraRestPay = restHoursDeficit * rates.weekday;
+        }
+      }
+    }
+
+    let finalAmt = baseAmount + extraRestPay;
+
+    const entry = { 
+      date: dateStr, 
+      start: start, 
+      end: end,
+      hours: hours,
+      overtimeHours: overtimeHours,
+      extraRestPay: extraRestPay,
+      restHoursDeficit: restHoursDeficit,
+      finalAmt: finalAmt
+    };
 
     if (editIndex === -1) {
       shifts.push(entry);
     } else {
+      let processed = processAllShifts(shifts);
       let target = processed[editIndex];
       let realIdx = shifts.findIndex(s => s.date === target.date && s.start === target.start && s.end === target.end);
       if(realIdx !== -1) shifts[realIdx] = entry;
@@ -467,22 +565,22 @@
     let totalPaySum = 0;
 
     processed.forEach(item => {
-      totalHoursSum += Number(item.hours);
-      totalOvertimeHoursSum += Number(item.overtimeHours);
-      totalRestHoursSum += Number(item.restHoursDeficit);
-      totalRestPaySum += Number(item.extraRestPay);
-      totalPaySum += Number(item.finalAmt);
+      totalHoursSum += Number(item.hours || 0);
+      totalOvertimeHoursSum += Number(item.overtimeHours || 0);
+      totalRestHoursSum += Number(item.restHoursDeficit || 0);
+      totalRestPaySum += Number(item.extraRestPay || 0);
+      totalPaySum += Number(item.finalAmt || 0);
       
       let dateWithDay = item.date + ' (' + item.dayName + ')';
       let row = worksheet.addRow([
         dateWithDay,
         item.start,
         item.end,
-        Number(item.hours.toFixed(2)),
-        Number(item.overtimeHours.toFixed(2)),
-        Number(item.restHoursDeficit.toFixed(2)),
-        Number(item.extraRestPay.toFixed(2)),
-        Number(item.finalAmt.toFixed(2))
+        Number((item.hours || 0).toFixed(2)),
+        Number((item.overtimeHours || 0).toFixed(2)),
+        Number((item.restHoursDeficit || 0).toFixed(2)),
+        Number((item.extraRestPay || 0).toFixed(2)),
+        Number((item.finalAmt || 0).toFixed(2))
       ]);
 
       if (item.isWeekend) {
@@ -536,10 +634,9 @@
       "09": "Σεπτέμβριος", "10": "Οκτώβριος", "11": "Νοέμβριος", "12": "Δεκέμβριος"
     };
 
-    // Ομαδοποίηση ανά μήνα
     let byMonth = {};
     processed.forEach(item => {
-      let m = item.date.substring(0, 7); // YYYY-MM
+      let m = item.date.substring(0, 7);
       if (!byMonth[m]) byMonth[m] = [];
       byMonth[m].push(item);
     });
@@ -557,7 +654,6 @@
     let grandRestPay = 0;
     let grandPay = 0;
 
-    // Ταξινόμηση μηνών
     let sortedMonths = Object.keys(byMonth).sort();
 
     sortedMonths.forEach(monthKey => {
@@ -590,22 +686,22 @@
       let monthHours = 0, monthOvertime = 0, monthRestH = 0, monthRestP = 0, monthPay = 0;
 
       byMonth[monthKey].forEach(item => {
-        monthHours += Number(item.hours);
-        monthOvertime += Number(item.overtimeHours);
-        monthRestH += Number(item.restHoursDeficit);
-        monthRestP += Number(item.extraRestPay);
-        monthPay += Number(item.finalAmt);
+        monthHours += Number(item.hours || 0);
+        monthOvertime += Number(item.overtimeHours || 0);
+        monthRestH += Number(item.restHoursDeficit || 0);
+        monthRestP += Number(item.extraRestPay || 0);
+        monthPay += Number(item.finalAmt || 0);
 
         let dateWithDay = item.date + ' (' + item.dayName + ')';
         let row = worksheet.addRow([
           dateWithDay,
           item.start,
           item.end,
-          Number(item.hours.toFixed(2)),
-          Number(item.overtimeHours.toFixed(2)),
-          Number(item.restHoursDeficit.toFixed(2)),
-          Number(item.extraRestPay.toFixed(2)),
-          Number(item.finalAmt.toFixed(2))
+          Number((item.hours || 0).toFixed(2)),
+          Number((item.overtimeHours || 0).toFixed(2)),
+          Number((item.restHoursDeficit || 0).toFixed(2)),
+          Number((item.extraRestPay || 0).toFixed(2)),
+          Number((item.finalAmt || 0).toFixed(2))
         ]);
 
         if (item.isWeekend) {
@@ -620,7 +716,6 @@
         }
       });
 
-      // Σύνολα μήνα
       let monthPayRounded = Math.floor(monthPay / 5) * 5;
       const monthTotalRow = worksheet.addRow([
         'ΣΥΝΟΛΑ ΜΗΝΑ:',
@@ -637,7 +732,7 @@
         cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE3F2FD' } };
       });
 
-      worksheet.addRow({}); // κενή γραμμή
+      worksheet.addRow({});
 
       grandHours += monthHours;
       grandOvertime += monthOvertime;
@@ -646,7 +741,6 @@
       grandPay += monthPay;
     });
 
-    // Μεγάλο σύνολο έτους
     let grandPayRounded = Math.floor(grandPay / 5) * 5;
     worksheet.addRow(['ΣΥΝΟΛΑ ΟΛΟΥ ΤΟΥ ΕΤΟΥΣ:']);
     worksheet.lastRow.font = { bold: true, size: 13, color: { argb: 'FFB71C1C' } };
@@ -718,6 +812,10 @@
       };
     }
   }
+
+  // Αρχικοποίηση πεδίων τιμών
+  document.getElementById('rateWeekday').value = rates.weekday;
+  document.getElementById('rateWeekend').value = rates.weekend;
 
   saveAndRender();
 </script>
