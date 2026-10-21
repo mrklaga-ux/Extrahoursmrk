@@ -4,6 +4,16 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Extrahoursmrk</title>
+  <link rel="manifest" id="appManifest">
+  <meta name="theme-color" content="#121212">
+  <script>
+    (function(){
+      function icon(n){var c=document.createElement('canvas');c.width=c.height=n;var x=c.getContext('2d');x.fillStyle='#121212';x.fillRect(0,0,n,n);x.strokeStyle='#00e676';x.lineWidth=n*0.06;x.lineCap='round';x.beginPath();x.arc(n/2,n/2,n*0.32,0,2*Math.PI);x.stroke();x.beginPath();x.moveTo(n/2,n/2);x.lineTo(n/2,n*0.28);x.moveTo(n/2,n/2);x.lineTo(n*0.66,n/2);x.stroke();return c.toDataURL('image/png');}
+      var base='https://mrklaga-ux.github.io/Extrahoursmrk/';
+      var m={name:'Extrahoursmrk',short_name:'Υπερωρίες',id:base,start_url:base,scope:base,display:'standalone',background_color:'#121212',theme_color:'#121212',icons:[{src:icon(192),sizes:'192x192',type:'image/png'},{src:icon(512),sizes:'512x512',type:'image/png'}]};
+      document.getElementById('appManifest').href='data:application/manifest+json,'+encodeURIComponent(JSON.stringify(m));
+    })();
+  </script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
   <style>
